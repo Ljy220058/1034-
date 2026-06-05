@@ -1,0 +1,149 @@
+{
+  "members": [
+    {
+      "name": "Li Ming",
+      "phone": "15550010001",
+      "role": "leader",
+      "running_years": 8,
+      "pace": "5:10/km",
+      "usual_distance_km": 12.0,
+      "training_goal": "Lead the Tuesday tempo group",
+      "password_hash": "seeded-password-hash-leader"
+    },
+    {
+      "name": "Chen Yu",
+      "phone": "15550010002",
+      "role": "admin",
+      "running_years": 5,
+      "pace": "5:45/km",
+      "usual_distance_km": 10.0,
+      "training_goal": "Keep the member directory tidy",
+      "password_hash": "seeded-password-hash-admin"
+    },
+    {
+      "name": "Wang Fang",
+      "phone": "15550010003",
+      "role": "member",
+      "running_years": 2,
+      "pace": "6:20/km",
+      "usual_distance_km": 8.0,
+      "training_goal": "Finish a 10K in under 65 minutes",
+      "password_hash": "seeded-password-hash-member-a"
+    },
+    {
+      "name": "Zhao Lei",
+      "phone": "15550010004",
+      "role": "member",
+      "running_years": 1,
+      "pace": "6:50/km",
+      "usual_distance_km": 6.0,
+      "training_goal": "Build consistency with easy runs",
+      "password_hash": "seeded-password-hash-member-b"
+    }
+  ],
+  "activities": [
+    {
+      "title": "Tuesday Track Tempo",
+      "start_time": "2026-06-02T07:00:00+00:00",
+      "location": "City Stadium Track",
+      "route": "8 x 400m intervals",
+      "distance_km": 9.6,
+      "pace_group": "tempo",
+      "description": "Warm up together, then run controlled repeats with full recovery."
+    },
+    {
+      "title": "Weekend Long Run",
+      "start_time": "2026-06-05T08:00:00+00:00",
+      "location": "Riverside Park",
+      "route": "Out-and-back loop",
+      "distance_km": 16.0,
+      "pace_group": "easy",
+      "description": "A social long run with two hydration stops and a cooldown coffee."
+    },
+    {
+      "title": "Strength and Mobility Night",
+      "start_time": "2026-06-03T09:00:00+00:00",
+      "location": "Club House",
+      "route": null,
+      "distance_km": null,
+      "pace_group": "recovery",
+      "description": "Core work, hip mobility, and light strides for recovery."
+    }
+  ],
+  "registrations": [
+    {
+      "activity_index": 0,
+      "member_index": 0,
+      "status": "registered"
+    },
+    {
+      "activity_index": 0,
+      "member_index": 2,
+      "status": "registered"
+    },
+    {
+      "activity_index": 1,
+      "member_index": 0,
+      "status": "registered"
+    },
+    {
+      "activity_index": 1,
+      "member_index": 2,
+      "status": "registered"
+    },
+    {
+      "activity_index": 1,
+      "member_index": 3,
+      "status": "cancelled"
+    },
+    {
+      "activity_index": 2,
+      "member_index": 1,
+      "status": "registered"
+    }
+  ],
+  "attendances": [
+    {
+      "activity_index": 0,
+      "member_index": 0,
+      "status": "signed_in",
+      "signed_in_at": "2026-06-02T06:12:00+00:00",
+      "gps_checked": 1
+    },
+    {
+      "activity_index": 0,
+      "member_index": 2,
+      "status": "signed_in",
+      "signed_in_at": "2026-06-02T06:17:00+00:00",
+      "gps_checked": 0
+    },
+    {
+      "activity_index": 1,
+      "member_index": 0,
+      "status": "signed_in",
+      "signed_in_at": "2026-06-05T06:05:00+00:00",
+      "gps_checked": 1
+    },
+    {
+      "activity_index": 2,
+      "member_index": 1,
+      "status": "absent",
+      "signed_in_at": "2026-06-03T06:30:00+00:00",
+      "gps_checked": 0
+    }
+  ],
+  "announcements": [
+    {
+      "title": "Weekly training plan published",
+      "body": "The Tuesday tempo, Thursday mobility session, and weekend long run are now on the calendar.",
+      "status": "published",
+      "is_pinned": 1
+    },
+    {
+      "title": "Bring your own hydration belt",
+      "body": "Please bring a hydration belt or bottle for the longer weekend long run.",
+      "status": "published",
+      "is_pinned": 0
+    }
+  ]
+}

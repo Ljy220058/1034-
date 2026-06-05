@@ -1,0 +1,15 @@
+# Runtime artifacts
+backend/*.db
+*.db
+*.sqlite
+*.sqlite3
+
+# Python cache
+__pycache__/
+**/__pycache__/
+*.py[cod]
+
+# Test / coverage output
+.pytest_cache/
+.coverage
+htmlcov/

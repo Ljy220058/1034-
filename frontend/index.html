@@ -1,0 +1,1033 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>1034 Running Club | 签到页面</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #08111d;
+      --bg-elevated: rgba(15, 23, 42, 0.88);
+      --bg-elevated-2: rgba(30, 41, 59, 0.76);
+      --text: #ecf4ff;
+      --muted: #9fb2ca;
+      --line: rgba(148, 163, 184, 0.18);
+      --line-strong: rgba(148, 163, 184, 0.28);
+      --brand: #38bdf8;
+      --brand-2: #22c55e;
+      --accent: #f59e0b;
+      --danger: #fb7185;
+      --radius: 20px;
+      --shadow: 0 20px 55px rgba(2, 6, 23, 0.42);
+      --max: 1160px;
+    }
+
+    * { box-sizing: border-box; }
+    html {
+      scroll-behavior: smooth;
+      scroll-padding-top: 92px;
+    }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 12% 8%, rgba(56, 189, 248, 0.18), transparent 28%),
+        radial-gradient(circle at 84% 4%, rgba(34, 197, 94, 0.13), transparent 24%),
+        linear-gradient(180deg, #08111d 0%, #0b1728 54%, #101827 100%);
+      line-height: 1.55;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    button { font: inherit; }
+    h1, h2, h3, h4, p { margin-top: 0; }
+    .visually-hidden {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    .shell {
+      width: min(calc(100% - 24px), var(--max));
+      margin: 0 auto;
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      background: rgba(8, 17, 29, 0.78);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(14px);
+    }
+
+    .topbar-inner {
+      min-height: 68px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 12px 0;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .brand-mark {
+      width: 42px;
+      height: 42px;
+      border-radius: 14px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(135deg, var(--brand), var(--brand-2));
+      color: #04111f;
+      font-weight: 800;
+      box-shadow: var(--shadow);
+      flex: 0 0 auto;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 1rem;
+      line-height: 1.2;
+    }
+
+    .brand p {
+      margin: 2px 0 0;
+      color: var(--muted);
+      font-size: 0.84rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 52vw;
+    }
+
+    .nav {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .nav a {
+      min-height: 40px;
+      display: inline-flex;
+      align-items: center;
+      padding: 0 13px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      color: var(--muted);
+      font-size: 0.92rem;
+      transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+    }
+
+    .nav a:hover,
+    .nav a:focus-visible {
+      color: var(--text);
+      border-color: var(--line);
+      background: rgba(255, 255, 255, 0.05);
+      outline: none;
+      transform: translateY(-1px);
+    }
+
+    main { padding: 22px 0 34px; }
+
+    .card {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: linear-gradient(180deg, rgba(15, 23, 42, 0.92), rgba(15, 23, 42, 0.76));
+      box-shadow: var(--shadow);
+      transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+    }
+
+    .card:hover {
+      transform: translateY(-2px);
+      border-color: rgba(56, 189, 248, 0.26);
+      box-shadow: 0 22px 58px rgba(2, 6, 23, 0.48);
+    }
+
+    .profile-hero {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .hero-main {
+      padding: 28px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-main::after {
+      content: "";
+      position: absolute;
+      right: -54px;
+      bottom: -70px;
+      width: 210px;
+      height: 210px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(56, 189, 248, 0.18), transparent 66%);
+      pointer-events: none;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 14px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(56, 189, 248, 0.24);
+      background: rgba(56, 189, 248, 0.12);
+      color: #bdeaff;
+      font-size: 0.84rem;
+      font-weight: 700;
+    }
+
+    .hero-main h2 {
+      margin-bottom: 12px;
+      max-width: 11ch;
+      font-size: clamp(2.15rem, 6vw, 4.2rem);
+      line-height: 1.02;
+      letter-spacing: -0.055em;
+    }
+
+    .hero-main p {
+      margin-bottom: 0;
+      max-width: 58ch;
+      color: var(--muted);
+      font-size: 1rem;
+    }
+
+    .profile-card {
+      padding: 22px;
+      display: grid;
+      align-content: space-between;
+      gap: 18px;
+    }
+
+    .task-board {
+      margin-top: 22px;
+      padding: 24px;
+    }
+
+    .task-board__header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 18px;
+    }
+
+    .task-board__header h2 {
+      margin: 0 0 6px;
+      font-size: clamp(1.35rem, 3.5vw, 2rem);
+    }
+
+    .task-board__header p {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .task-toolbar {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .task-toolbar .field {
+      margin: 0;
+    }
+
+    .task-toolbar select,
+    .task-toolbar button {
+      width: 100%;
+      min-height: 44px;
+      border-radius: 14px;
+      border: 1px solid var(--line-strong);
+      background: rgba(15, 23, 42, 0.78);
+      color: var(--text);
+      padding: 0 14px;
+    }
+
+    .task-toolbar button {
+      background: linear-gradient(135deg, rgba(56, 189, 248, 0.22), rgba(34, 197, 94, 0.18));
+      font-weight: 700;
+    }
+
+    .task-summary {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .summary-chip {
+      display: inline-flex;
+      align-items: center;
+      min-height: 34px;
+      padding: 0 12px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .task-state {
+      margin-bottom: 16px;
+      padding: 16px;
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .task-state.loading,
+    .task-state.empty,
+    .task-state.ready,
+    .task-state.error {
+      border-left-width: 4px;
+    }
+
+    .task-state.loading { border-left-color: var(--brand); }
+    .task-state.empty { border-left-color: var(--accent); }
+    .task-state.ready { border-left-color: var(--brand-2); }
+    .task-state.error { border-left-color: var(--danger); }
+
+    .task-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .task-card {
+      padding: 18px;
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      background: rgba(15, 23, 42, 0.86);
+    }
+
+    .task-card-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: flex-start;
+      margin-bottom: 10px;
+    }
+
+    .task-card h3 { margin: 0; }
+    .task-meta, .task-description { color: var(--muted); }
+    .task-meta { font-size: 0.84rem; margin-bottom: 6px; }
+    .task-badge {
+      padding: 5px 10px;
+      border-radius: 999px;
+      background: rgba(56, 189, 248, 0.12);
+      border: 1px solid rgba(56, 189, 248, 0.18);
+      font-size: 0.8rem;
+    }
+
+    .task-details {
+      margin: 14px 0 0;
+      display: grid;
+      gap: 10px;
+    }
+
+    .task-details div {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      border-top: 1px solid var(--line);
+      padding-top: 10px;
+    }
+
+    .task-details dt { color: var(--muted); }
+    .task-details dd { margin: 0; text-align: right; word-break: break-word; }
+
+    .task-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 14px;
+    }
+
+    .task-action {
+      min-height: 38px;
+      padding: 0 12px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text);
+    }
+
+    .task-action.primary { background: rgba(56, 189, 248, 0.16); }
+    .task-action.neutral { background: rgba(255, 255, 255, 0.04); }
+
+    @media (max-width: 860px) {
+      .profile-hero,
+      .task-grid,
+      .task-toolbar {
+        grid-template-columns: 1fr;
+      }
+
+      .task-board__header,
+      .task-card-header,
+      .task-details div {
+        flex-direction: column;
+      }
+
+      .task-details dd { text-align: left; }
+    }
+
+    .runner-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .avatar {
+      width: 64px;
+      height: 64px;
+      border-radius: 22px;
+      display: grid;
+      place-items: center;
+      flex: 0 0 auto;
+      background: linear-gradient(135deg, rgba(56, 189, 248, 0.95), rgba(34, 197, 94, 0.92));
+      color: #03111e;
+      font-size: 1.4rem;
+      font-weight: 900;
+    }
+
+    .runner-row h3 {
+      margin: 0 0 4px;
+      font-size: 1.3rem;
+      letter-spacing: -0.02em;
+    }
+
+    .runner-row p { margin: 0; color: var(--muted); }
+
+    .status-line {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 10px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--line);
+      color: #dbeafe;
+      font-size: 0.84rem;
+      white-space: nowrap;
+      transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease;
+    }
+
+    .pill.green { color: #b8f7cc; background: rgba(34, 197, 94, 0.12); border-color: rgba(34, 197, 94, 0.2); }
+    .pill.amber { color: #fde68a; background: rgba(245, 158, 11, 0.12); border-color: rgba(245, 158, 11, 0.2); }
+    .pill.red { color: #fecdd3; background: rgba(251, 113, 133, 0.12); border-color: rgba(251, 113, 133, 0.2); }
+
+    .hero-stats {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .stat {
+      padding: 14px 16px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--line);
+    }
+
+    .stat strong {
+      display: block;
+      margin-bottom: 2px;
+      font-size: 1.2rem;
+    }
+
+    .stat span {
+      color: var(--muted);
+      font-size: 0.84rem;
+    }
+
+    .section {
+      margin-top: 18px;
+      padding: 22px;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .section-header h2,
+    .section-header h3 {
+      margin-bottom: 0;
+      letter-spacing: -0.02em;
+    }
+
+    .section-header p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 0.94rem;
+    }
+
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+
+    .announcement-list,
+    .activity-list,
+    .podium-list,
+    .schedule-list,
+    .route-list,
+    .gear-list,
+    .faq-list,
+    .team-list,
+    .reminder-list,
+    .coach-list,
+    .result-list,
+    .checkin-list,
+    .mission-list,
+    .support-list,
+    .membership-list,
+    .contact-list,
+    .policy-list,
+    .leaderboard-list,
+    .nutrition-list,
+    .safety-list,
+    .gallery-list,
+    .hero-cards,
+    .timeline-list,
+    .newsletter-list,
+    .highlight-list,
+    .task-list,
+    .benefit-list,
+    .feature-list,
+    .program-list,
+    .story-list,
+    .form-stack {
+      display: grid;
+      gap: 12px;
+    }
+
+    .card-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .mini-card,
+    .announcement-card,
+    .activity-card,
+    .route-card,
+    .gear-card,
+    .faq-card,
+    .team-card,
+    .reminder-card,
+    .coach-card,
+    .result-card,
+    .checkin-card,
+    .mission-card,
+    .support-card,
+    .membership-card,
+    .contact-card,
+    .policy-card,
+    .leaderboard-card,
+    .nutrition-card,
+    .safety-card,
+    .gallery-card,
+    .timeline-card,
+    .newsletter-card,
+    .highlight-card,
+    .task-card,
+    .benefit-card,
+    .feature-card,
+    .program-card,
+    .story-card {
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .mini-card strong,
+    .announcement-card h3,
+    .activity-card h3,
+    .route-card h3,
+    .gear-card h3,
+    .faq-card h3,
+    .team-card h3,
+    .reminder-card h3,
+    .coach-card h3,
+    .result-card h3,
+    .checkin-card h3,
+    .mission-card h3,
+    .support-card h3,
+    .membership-card h3,
+    .contact-card h3,
+    .policy-card h3,
+    .leaderboard-card h3,
+    .nutrition-card h3,
+    .safety-card h3,
+    .gallery-card h3,
+    .timeline-card h3,
+    .newsletter-card h3,
+    .highlight-card h3,
+    .task-card h3,
+    .benefit-card h3,
+    .feature-card h3,
+    .program-card h3,
+    .story-card h3 { margin-bottom: 8px; }
+
+    .mini-card p,
+    .announcement-card p,
+    .activity-card p,
+    .route-card p,
+    .gear-card p,
+    .faq-card p,
+    .team-card p,
+    .reminder-card p,
+    .coach-card p,
+    .result-card p,
+    .checkin-card p,
+    .mission-card p,
+    .support-card p,
+    .membership-card p,
+    .contact-card p,
+    .policy-card p,
+    .leaderboard-card p,
+    .nutrition-card p,
+    .safety-card p,
+    .gallery-card p,
+    .timeline-card p,
+    .newsletter-card p,
+    .highlight-card p,
+    .task-card p,
+    .benefit-card p,
+    .feature-card p,
+    .program-card p,
+    .story-card p { margin-bottom: 0; color: var(--muted); }
+
+    .announcement-badge {
+      display: inline-flex;
+      align-items: center;
+      margin-bottom: 10px;
+      padding: 5px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(245, 158, 11, 0.22);
+      background: rgba(245, 158, 11, 0.12);
+      color: #fde68a;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+
+    .task-preview-empty {
+      color: var(--muted);
+      font-style: italic;
+    }
+
+    .error-state { color: #fecdd3; }
+
+    .connection-panel {
+      display: grid;
+      gap: 10px;
+    }
+
+    .connection-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      width: fit-content;
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      font-size: 0.84rem;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+    }
+
+    .connection-badge::before {
+      content: '';
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: currentColor;
+      box-shadow: 0 0 0 4px rgba(255,255,255,0.04);
+    }
+
+    .connection-badge.green { color: #b8f7cc; background: rgba(34, 197, 94, 0.12); border-color: rgba(34, 197, 94, 0.2); }
+    .connection-badge.amber { color: #fde68a; background: rgba(245, 158, 11, 0.12); border-color: rgba(245, 158, 11, 0.2); }
+    .connection-badge.red { color: #fecdd3; background: rgba(251, 113, 133, 0.12); border-color: rgba(251, 113, 133, 0.2); }
+
+    .connection-message,
+    .connection-hint {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.94rem;
+    }
+
+    .connection-hint {
+      font-size: 0.86rem;
+    }
+
+    .connection-action {
+      min-height: 40px;
+      justify-content: center;
+    }
+
+    .fanout-summary {
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) auto;
+      gap: 14px;
+      align-items: start;
+      margin-bottom: 16px;
+    }
+
+    .fanout-copy h3 {
+      margin-bottom: 6px;
+      font-size: 1.1rem;
+    }
+
+    .fanout-copy p {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .fanout-count {
+      min-width: 116px;
+      padding: 16px;
+      border-radius: 18px;
+      border: 1px solid rgba(245, 158, 11, 0.2);
+      background: rgba(245, 158, 11, 0.12);
+      text-align: center;
+    }
+
+    .fanout-count strong {
+      display: block;
+      font-size: 2rem;
+      line-height: 1;
+    }
+
+    .fanout-count span {
+      color: #ffe0a6;
+      font-size: 0.82rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+    }
+
+    .fanout-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .fanout-card {
+      padding: 18px;
+      border-radius: 20px;
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      background: linear-gradient(180deg, rgba(8, 17, 29, 0.76), rgba(15, 23, 42, 0.9));
+      display: grid;
+      gap: 12px;
+    }
+
+    .fanout-card-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .fanout-index {
+      color: var(--muted);
+      font-size: 0.84rem;
+      font-weight: 700;
+    }
+
+    .fanout-card h3 {
+      margin: 0;
+      font-size: 1.08rem;
+    }
+
+    .fanout-card p {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .fanout-meta {
+      margin: 0;
+      display: grid;
+      gap: 10px;
+    }
+
+    .fanout-meta div {
+      padding-top: 10px;
+      border-top: 1px solid rgba(148, 163, 184, 0.14);
+    }
+
+    .fanout-meta dt {
+      color: #cbd5e1;
+      font-size: 0.78rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .fanout-meta dd {
+      margin: 4px 0 0;
+      color: var(--text);
+      word-break: break-word;
+    }
+
+    @media (max-width: 920px) {
+      .profile-hero,
+      .grid-2,
+      .grid-3,
+      .fanout-grid,
+      .fanout-summary { grid-template-columns: 1fr; }
+      .hero-stats { grid-template-columns: 1fr; }
+      .topbar-inner { flex-direction: column; align-items: flex-start; }
+      .nav { justify-content: flex-start; }
+      .section-header { align-items: flex-start; flex-direction: column; }
+    }
+
+    @media (max-width: 640px) {
+      .shell { width: min(calc(100% - 16px), var(--max)); }
+      main { padding-top: 14px; }
+      .hero-main,
+      .profile-card,
+      .section { padding: 18px; }
+      .nav a { min-height: 38px; padding: 0 11px; font-size: 0.88rem; }
+      .connection-action { width: 100%; }
+    }
+  </style>
+  <script type="module" src="./app.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="shell topbar-inner">
+      <div class="brand">
+        <div class="brand-mark">1034</div>
+        <div>
+          <h1>1034 Running Club</h1>
+          <p>Mobile-first club operations UI for runners and organizers</p>
+        </div>
+      </div>
+      <nav class="nav" aria-label="页面导航">
+        <a href="#announcements">公告</a>
+        <a href="#checkin">签到</a>
+        <a href="#tasks">任务</a>
+        <a href="statistics.html">统计</a>
+      </nav>
+    </div>
+  </header>
+  <main>
+    <div class="shell">
+      <section class="profile-hero">
+        <article class="card hero-main">
+          <div class="eyebrow">晨跑签到 · 路线提醒 · 活动发布</div>
+          <h2>让每一次训练都更有秩序</h2>
+          <p>这里是 1034 Running Club 的轻量管理界面：查看公告、确认连接状态、创建任务草稿，并在手机上快速完成日常运营。</p>
+          <div class="hero-stats">
+            <div class="stat"><strong>126</strong><span>本周累计签到</span></div>
+            <div class="stat"><strong>8</strong><span>今日待处理事项</span></div>
+            <div class="stat"><strong>99%</strong><span>状态服务可用率</span></div>
+          </div>
+        </article>
+        <aside class="card profile-card">
+          <div class="runner-row">
+            <div class="avatar">跑</div>
+            <div>
+              <h3>Club Ops Dashboard</h3>
+              <p>适合手机浏览的深色响应式布局</p>
+            </div>
+          </div>
+          <div class="status-line">
+            <span class="pill green">活动中</span>
+            <span class="pill amber">待发布</span>
+            <span class="pill">模块化前端</span>
+          </div>
+          <div class="card-list">
+            <div class="mini-card"><strong>公告中心</strong><p>最新活动会自动出现在页面顶部，支持置顶提示。</p></div>
+            <div class="mini-card"><strong>任务草稿</strong><p>填写表单即可即时预览任务标题、负责人和依赖项。</p></div>
+            <div class="mini-card"><strong>连接状态</strong><p>状态服务的加载、失败和重试逻辑已拆出为独立模块。</p></div>
+          </div>
+        </aside>
+      </section>
+
+      <section id="announcements" class="card section">
+        <div class="section-header">
+          <div>
+            <h2>公告</h2>
+            <p>来自后端的俱乐部通知、路线变更和活动提醒。</p>
+          </div>
+          <span class="pill">模块：api.js + utils.js</span>
+        </div>
+        <div class="announcement-list" data-announcements>
+          <article class="announcement-card">
+            <h3>加载中</h3>
+            <p>页面会在模块脚本加载后自动请求公告列表。</p>
+          </article>
+        </div>
+      </section>
+
+      <section id="checkin" class="card section">
+        <div class="section-header">
+          <div>
+            <h2>连接状态</h2>
+            <p>独立的状态徽章会在页面加载后检查 API 健康状况。</p>
+          </div>
+          <button class="pill connection-action" type="button" data-connection-retry>重试连接</button>
+        </div>
+        <div class="grid-2">
+          <div class="card-list">
+            <div class="mini-card connection-panel">
+              <div class="connection-badge amber" data-connection-badge data-state="loading" aria-live="polite">连接检查中…</div>
+              <p class="connection-message" data-connection-message>正在读取实时连接状态。</p>
+              <p class="connection-hint">如果状态异常，可点击右侧按钮重新发起连接检查。</p>
+            </div>
+          </div>
+          <div class="card-list">
+            <div class="mini-card"><strong>签到小贴士</strong><p>当天跑步计划、路线和补给建议会在活动面板中统一展示。</p></div>
+            <div class="mini-card"><strong>状态反馈</strong><p>如果服务中断，界面会保留最近一次检查状态，方便现场处理。</p></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="tasks" class="card section">
+        <div class="section-header">
+          <div>
+            <h2>任务草稿</h2>
+            <p>表单校验、预览和连接状态均已拆分到独立模块。</p>
+          </div>
+          <span class="pill">ui helpers</span>
+        </div>
+        <div class="grid-2">
+          <form id="task-create-form" class="form-stack">
+            <label>
+              标题
+              <input data-field="title" type="text" placeholder="例如：安排周末长跑补给" />
+              <small class="field-error"></small>
+            </label>
+            <label>
+              负责人
+              <input data-field="assignee" type="text" placeholder="例如：Coach A" />
+              <small class="field-error"></small>
+            </label>
+            <label>
+              状态
+              <input data-field="status" type="text" placeholder="draft / ready / blocked" />
+              <small class="field-error"></small>
+            </label>
+            <label>
+              优先级
+              <input data-field="priority" type="text" placeholder="high / medium / low" />
+              <small class="field-error"></small>
+            </label>
+            <label>
+              依赖项
+              <input data-field="dependencies" type="text" placeholder="#t_1234abcd, #t_5678efgh" />
+              <small class="field-error"></small>
+            </label>
+            <label>
+              描述
+              <textarea data-field="description" rows="4" placeholder="写下任务说明、目标和备注"></textarea>
+              <small class="field-error"></small>
+            </label>
+            <div id="task-form-status" class="pill" aria-live="polite"></div>
+            <div class="status-line">
+              <button class="pill green" type="submit">保存草稿</button>
+              <button class="pill" type="reset">重置</button>
+            </div>
+          </form>
+          <aside class="card-list">
+            <div class="mini-card">
+              <strong id="task-preview-title">等待输入任务信息</strong>
+              <p id="task-preview-desc" class="task-preview-empty">填写表单后会显示任务摘要、负责人和依赖信息。</p>
+              <div id="task-preview-meta" class="status-line"></div>
+              <p id="task-preview-deps">依赖：无</p>
+            </div>
+            <div class="mini-card">
+              <strong id="task-export-summary">导出预览会在这里显示</strong>
+              <p>把草稿导出成 JSON，便于复制到任务描述或下游卡片。</p>
+              <pre id="task-export-payload" class="export-payload">{}</pre>
+              <p id="task-export-count" class="export-count">0 个已填写字段</p>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <section id="fanout" class="card section">
+        <div class="section-header">
+          <div>
+            <h2>已创建的两个 Kanban 任务</h2>
+            <p>用于快速核对 fan-out 结果、负责人、工作区与当前状态。</p>
+          </div>
+          <span class="pill amber">exactly 2 tasks</span>
+        </div>
+        <div class="fanout-summary">
+          <div class="fanout-copy">
+            <h3>立即可验证的下游卡片</h3>
+            <p>下面的两张卡片是本次任务拆分的结果。每张卡片都显示标题、负责人、工作区和状态，方便操作员在同一屏幕完成检查。</p>
+          </div>
+          <div class="fanout-count" aria-label="created kanban task count">
+            <strong>2</strong>
+            <span>cards surfaced</span>
+          </div>
+        </div>
+        <div class="fanout-grid">
+          <article class="fanout-card">
+            <div class="fanout-card-top">
+              <span class="pill green">ready</span>
+              <span class="fanout-index">#1</span>
+            </div>
+            <h3>视觉回归检查</h3>
+            <p>确认新增的 fan-out 呈现区域在桌面端和移动端都能清晰展示。</p>
+            <dl class="fanout-meta">
+              <div><dt>Assignee</dt><dd>frontend-dev</dd></div>
+              <div><dt>Workspace</dt><dd>/root/autodl-tmp/projects/hermes-swarm-lab</dd></div>
+              <div><dt>State</dt><dd>ready</dd></div>
+            </dl>
+          </article>
+          <article class="fanout-card">
+            <div class="fanout-card-top">
+              <span class="pill amber">running</span>
+              <span class="fanout-index">#2</span>
+            </div>
+            <h3>Handoff 路径核对</h3>
+            <p>确保任务输出路径与当前工作区一致，方便后续 worker 直接定位产物。</p>
+            <dl class="fanout-meta">
+              <div><dt>Assignee</dt><dd>frontend-dev</dd></div>
+              <div><dt>Workspace</dt><dd>/root/autodl-tmp/projects/hermes-swarm-lab</dd></div>
+              <div><dt>State</dt><dd>running</dd></div>
+            </dl>
+          </article>
+        </div>
+      </section>
+    </div>
+  </main>
+</body>
+</html>
