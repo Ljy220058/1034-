@@ -3,6 +3,7 @@ from __future__ import annotations
 from fastapi import FastAPI
 
 from .activities import router as activities_router
+from .activity_digest import router as activity_digest_router
 from .activity_photos import router as activity_photos_router
 from .activity_rules import router as activity_rules_router
 from .achievements import router as achievements_router
@@ -19,6 +20,7 @@ from .idle_worker_idea_pool import router as idle_worker_idea_pool_router
 from .idle_worker_ideas import router as idle_worker_ideas_router
 from .idle_worker_summary import router as idle_worker_summary_router
 from .idle_worker_task_heatmap import router as idle_worker_task_heatmap_router
+from .login_verification import router as login_verification_router
 from .member_activity_export import router as member_activity_export_router
 from .member_ranking import router as member_ranking_router
 from .members import router as members_router
@@ -28,8 +30,9 @@ from .task_board import router as task_board_router
 from .task_board_intake import router as task_board_intake_router
 from .task_imports import router as task_imports_router
 from .tasks import router as tasks_router
-from .training_pace import router as training_pace_router
 from .team_challenges import router as team_challenges_router
+from .training_pace import router as training_pace_router
+from .training_plan_completion import router as training_plan_completion_router
 from .worker_dashboard import router as worker_dashboard_router
 from .worker_routing_recommendations import router as worker_routing_recommendations_router
 from .workers import router as workers_router
