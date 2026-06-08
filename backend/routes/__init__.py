@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from .activities import router as activities_router
 from .activity_digest import router as activity_digest_router
 from .achievements import router as achievements_router
-from .activity_photos import router as activity_photos_router
+from .activity_share_card import router as activity_share_card_router
 from .announcements import router as announcements_router
 from .checkin_stats import router as checkin_stats_router
 from .checkins import router as checkins_router
@@ -22,6 +22,7 @@ from .idle_worker_task_heatmap import router as idle_worker_task_heatmap_router
 from .login_verification import router as login_verification_router
 from .member_activity_export import router as member_activity_export_router
 from .member_ranking import router as member_ranking_router
+from .member_timeline import router as member_timeline_router
 from .members import router as members_router
 from .new_member_onboarding import router as new_member_onboarding_router
 from .running_data_imports import router as running_data_imports_router
@@ -67,6 +68,7 @@ def register_routes(app: FastAPI) -> None:
     app.include_router(login_verification_router)
     app.include_router(member_activity_export_router)
     app.include_router(member_ranking_router)
+    app.include_router(member_timeline_router)
     app.include_router(members_router)
     app.include_router(new_member_onboarding_router)
     app.include_router(running_data_imports_router)

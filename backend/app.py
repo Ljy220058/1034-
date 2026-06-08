@@ -13,12 +13,14 @@ from fastapi.responses import JSONResponse
 from .db import initialize_database
 from .models import ApiResponse
 from .routes import register_routes
+from .routes.activity_share_card import router as activity_share_card_router
 from .settings import build_readiness_status, format_readiness_summary
 
 app = FastAPI(title='1034 Running Club API')
 app.state.started_at = os.times().elapsed
 app.state.version = os.getenv('RUNNING_CLUB_VERSION', '0.1.0')
 register_routes(app)
+app.include_router(activity_share_card_router)
 
 
 @dataclass(frozen=True)
