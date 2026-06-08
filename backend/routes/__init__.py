@@ -18,6 +18,7 @@ from .idle_worker_ideas import router as idle_worker_ideas_router
 from .idle_worker_summary import router as idle_worker_summary_router
 from .idle_worker_task_heatmap import router as idle_worker_task_heatmap_router
 from .member_activity_export import router as member_activity_export_router
+from .member_ranking import router as member_ranking_router
 from .members import router as members_router
 from .running_data_imports import router as running_data_imports_router
 from .task_board import router as task_board_router
@@ -56,6 +57,7 @@ router_modules = (
     task_imports_router,
     activity_rules_router,
     member_activity_export_router,
+    member_ranking_router,
     running_data_imports_router,
     training_pace_router,
     training_plan_completion_router,

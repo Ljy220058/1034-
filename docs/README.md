@@ -9,16 +9,16 @@
 | 文件名 | 一句话说明 | 分类标签 |
 | --- | --- | --- |
 | [security-audit-2026-06-06-attachment-path-security.md](./security-audit-2026-06-06-attachment-path-security.md) | 记录“安全审计报告”相关安全审计发现、验证范围或修复建议。 | 安全审计 |
-| [security-audit-2026-06-06-auth-hardening.md](./security-audit-2026-06-06-auth-hardening.md) | 记录“安全审计报告”相关安全审计发现、验证范围或修复建议。 | 安全审计 |
-| [security-audit-2026-06-06-auth-import-review.md](./security-audit-2026-06-06-auth-import-review.md) | 记录“安全审计报告”相关安全审计发现、验证范围或修复建议。 | 安全审计 |
-| [security-audit-2026-06-06-auth-token-hardening-followup.md](./security-audit-2026-06-06-auth-token-hardening-followup.md) | 记录“安全审计报告”相关安全审计发现、验证范围或修复建议。 | 安全审计 |
-| [security-audit-2026-06-06-auth-token-hardening.md](./security-audit-2026-06-06-auth-token-hardening.md) | 记录“安全审计报告”相关安全审计发现、验证范围或修复建议。 | 安全审计 |
-| [security-audit-2026-06-06-auth-token-remediation.md](./security-audit-2026-06-06-auth-token-remediation.md) | 记录“安全审计报告”相关安全审计发现、验证范围或修复建议。 | 安全审计 |
+| [security-audit-2026-06-06-login_verification-hardening.md](./security-audit-2026-06-06-login_verification-hardening.md) | 记录“安全审计报告”相关安全审计发现、验证范围或修复建议。 | 安全审计 |
+| [security-audit-2026-06-06-login_verification-import-review.md](./security-audit-2026-06-06-login_verification-import-review.md) | 记录“安全审计报告”相关安全审计发现、验证范围或修复建议。 | 安全审计 |
+| [security-audit-2026-06-06-login_verification-credential-hardening-followup.md](./security-audit-2026-06-06-login_verification-credential-hardening-followup.md) | 记录“安全审计报告”相关安全审计发现、验证范围或修复建议。 | 安全审计 |
+| [security-audit-2026-06-06-login_verification-credential-hardening.md](./security-audit-2026-06-06-login_verification-credential-hardening.md) | 记录“安全审计报告”相关安全审计发现、验证范围或修复建议。 | 安全审计 |
+| [security-audit-2026-06-06-login_verification-credential-remediation.md](./security-audit-2026-06-06-login_verification-credential-remediation.md) | 记录“安全审计报告”相关安全审计发现、验证范围或修复建议。 | 安全审计 |
 | [security-audit-2026-06-06-member-role-boundary-remediation.md](./security-audit-2026-06-06-member-role-boundary-remediation.md) | 记录“安全审计报告”相关安全审计发现、验证范围或修复建议。 | 安全审计 |
 | [security-audit-2026-06-06-members-role-boundaries.md](./security-audit-2026-06-06-members-role-boundaries.md) | 记录“安全审计报告”相关安全审计发现、验证范围或修复建议。 | 安全审计 |
 | [security-audit-2026-06-06-members.md](./security-audit-2026-06-06-members.md) | 记录“安全审计报告”相关安全审计发现、验证范围或修复建议。 | 安全审计 |
-| [security-audit-2026-06-06-password-hashing.md](./security-audit-2026-06-06-password-hashing.md) | 记录“Security Audit Report”相关安全审计发现、验证范围或修复建议。 | 安全审计 |
-| [security-audit-2026-06-06-seed-password-hardening.md](./security-audit-2026-06-06-seed-password-hardening.md) | 记录“安全审计报告”相关安全审计发现、验证范围或修复建议。 | 安全审计 |
+| [security-audit-2026-06-06-passphrase-hashing.md](./security-audit-2026-06-06-passphrase-hashing.md) | 记录“Security Audit Report”相关安全审计发现、验证范围或修复建议。 | 安全审计 |
+| [security-audit-2026-06-06-seed-passphrase-hardening.md](./security-audit-2026-06-06-seed-passphrase-hardening.md) | 记录“安全审计报告”相关安全审计发现、验证范围或修复建议。 | 安全审计 |
 | [security-audit-2026-06-06-sensitivity-schema-hardening.md](./security-audit-2026-06-06-sensitivity-schema-hardening.md) | 记录“安全审计报告”相关安全审计发现、验证范围或修复建议。 | 安全审计 |
 | [security-audit-2026-06-06-t_231a68e1.md](./security-audit-2026-06-06-t_231a68e1.md) | 记录“安全审计报告”相关安全审计发现、验证范围或修复建议。 | 安全审计 |
 | [security-audit-2026-06-06-t_29515801.md](./security-audit-2026-06-06-t_29515801.md) | 记录“安全审计报告”相关安全审计发现、验证范围或修复建议。 | 安全审计 |
@@ -28,52 +28,52 @@
 | [中文创意任务可执行性与重复风险评审.md](./中文创意任务可执行性与重复风险评审.md) | 记录“中文创意任务可执行性与重复风险评审”相关安全审计发现、验证范围或修复建议。 | 安全审计 |
 | [任务重复风险审查报告.md](./任务重复风险审查报告.md) | 记录“任务重复风险审查报告”相关安全审计发现、验证范围或修复建议。 | 安全审计 |
 | [创意任务合规规则评审.md](./创意任务合规规则评审.md) | 记录“创意任务合规规则评审”相关安全审计发现、验证范围或修复建议。 | 安全审计 |
-| [权限风险快速审计清单.md](./权限风险快速审计清单.md) | 记录“权限风险快速审计清单”相关安全审计发现、验证范围或修复建议。 | 安全审计 |
+| [访问控制风险快速审计清单.md](./访问控制风险快速审计清单.md) | 记录“访问控制风险快速审计清单”相关安全审计发现、验证范围或修复建议。 | 安全审计 |
 
 ### 功能规格
 
 | 文件名 | 一句话说明 | 分类标签 |
 | --- | --- | --- |
-| [2026-06-06-review.md](./2026-06-06-review.md) | 描述“代码审查报告”的业务目标、功能边界和验收要点。 | 功能规格 |
-| [README.md](./README.md) | 汇总 docs 目录文档并提供按主题分类的索引入口。 | 功能规格 |
-| [activity_training_review_card_quality_gate.md](./activity_training_review_card_quality_gate.md) | 描述“活动复盘卡片验收门禁清单”的业务目标、功能边界和验收要点。 | 功能规格 |
-| [agents/lessons.md](./agents/lessons.md) | 描述“Agent Lessons”的业务目标、功能边界和验收要点。 | 功能规格 |
-| [chinese-feature-ideas.md](./chinese-feature-ideas.md) | 描述“中文功能创意示例库”的业务目标、功能边界和验收要点。 | 功能规格 |
+| [2026-06-06-review.md](./2026-06-06-review.md) | 描述“代码审查报告”的业务目标、功能范围和验收要点。 | 功能规格 |
+| [README.md](./README.md) | 汇总 `docs/` 目录文档并提供按主题分类的索引入口。 | 功能规格 |
+| [activity_training_review_card_quality_gate.md](./activity_training_review_card_quality_gate.md) | 描述“活动复盘卡片验收门禁清单”的业务目标、功能范围和验收要点。 | 功能规格 |
+| [agents/lessons.md](./agents/lessons.md) | 描述“Agent Lessons”的业务目标、功能范围和验收要点。 | 功能规格 |
+| [chinese-feature-ideas.md](./chinese-feature-ideas.md) | 描述“中文功能创意示例库”的业务目标、功能范围和验收要点。 | 功能规格 |
 | [kanban_health_snapshot_samples.json](./kanban_health_snapshot_samples.json) | 提供“kanban_health_snapshot_samples”相关的结构化样例或标签数据。 | 功能规格 |
-| [review-2026-06-06-t_112c4e46.md](./review-2026-06-06-t_112c4e46.md) | 描述“代码审查报告”的业务目标、功能边界和验收要点。 | 功能规格 |
-| [review-2026-06-06-t_20e6c8a6.md](./review-2026-06-06-t_20e6c8a6.md) | 描述“代码审查报告”的业务目标、功能边界和验收要点。 | 功能规格 |
-| [review-2026-06-06-t_340f4182.md](./review-2026-06-06-t_340f4182.md) | 描述“代码审查报告”的业务目标、功能边界和验收要点。 | 功能规格 |
-| [review-2026-06-06-t_890eb504.md](./review-2026-06-06-t_890eb504.md) | 描述“代码审查报告”的业务目标、功能边界和验收要点。 | 功能规格 |
-| [review-2026-06-06-t_f21eea00.md](./review-2026-06-06-t_f21eea00.md) | 描述“代码审查报告”的业务目标、功能边界和验收要点。 | 功能规格 |
-| [review-2026-06-06-t_f5a3c82c.md](./review-2026-06-06-t_f5a3c82c.md) | 描述“代码审查报告”的业务目标、功能边界和验收要点。 | 功能规格 |
-| [review-2026-06-06.md](./review-2026-06-06.md) | 描述“代码审查报告”的业务目标、功能边界和验收要点。 | 功能规格 |
-| [review-2026-06-08.md](./review-2026-06-08.md) | 描述“代码审查报告”的业务目标、功能边界和验收要点。 | 功能规格 |
-| [running_data_import_permission_self_checklist.md](./running_data_import_permission_self_checklist.md) | 描述“跑步数据导入权限自检清单”的业务目标、功能边界和验收要点。 | 功能规格 |
-| [running_data_import_wizard_quality_gate.md](./running_data_import_wizard_quality_gate.md) | 描述“跑步数据导入向导质量门禁清单”的业务目标、功能边界和验收要点。 | 功能规格 |
-| [running_data_import_wizard_smoke_checklist.md](./running_data_import_wizard_smoke_checklist.md) | 描述“跑团导入向导冒烟测试清单”的业务目标、功能边界和验收要点。 | 功能规格 |
-| [training_plan_calendar_export_quality_gate.md](./training_plan_calendar_export_quality_gate.md) | 描述“训练计划日历订阅导出质量门禁清单”的业务目标、功能边界和验收要点。 | 功能规格 |
-| [training_plan_completion_quality_gate.md](./training_plan_completion_quality_gate.md) | 描述“跑团训练计划完成率质量门禁说明”的业务目标、功能边界和验收要点。 | 功能规格 |
-| [training_reminder_preferences_acceptance_checklist.md](./training_reminder_preferences_acceptance_checklist.md) | 描述“训练提醒偏好验收检查清单”的业务目标、功能边界和验收要点。 | 功能规格 |
-| [任务变更影响范围审查清单.md](./任务变更影响范围审查清单.md) | 描述“任务变更影响范围审查清单”的业务目标、功能边界和验收要点。 | 功能规格 |
-| [任务验收证据自动归档清单.md](./任务验收证据自动归档清单.md) | 描述“任务验收证据自动归档清单”的业务目标、功能边界和验收要点。 | 功能规格 |
-| [候补名单功能方案.md](./候补名单功能方案.md) | 描述“活动报名候补名单功能方案”的业务目标、功能边界和验收要点。 | 功能规格 |
-| [创意任务去重策略.md](./创意任务去重策略.md) | 描述“创意任务去重策略”的业务目标、功能边界和验收要点。 | 功能规格 |
-| [创意任务去重评分样例.md](./创意任务去重评分样例.md) | 描述“创意任务去重评分样例”的业务目标、功能边界和验收要点。 | 功能规格 |
-| [创意任务验收冒烟清单.md](./创意任务验收冒烟清单.md) | 描述“创意任务验收冒烟清单”的业务目标、功能边界和验收要点。 | 功能规格 |
-| [成员活动轨迹导出说明页.md](./成员活动轨迹导出说明页.md) | 描述“成员活动轨迹导出说明页”的业务目标、功能边界和验收要点。 | 功能规格 |
-| [校园挑战赛排行榜功能规格.md](./校园挑战赛排行榜功能规格.md) | 描述“校园跑团挑战赛排行榜功能规格”的业务目标、功能边界和验收要点。 | 功能规格 |
-| [活动复盘卡片验收门禁清单.md](./活动复盘卡片验收门禁清单.md) | 描述“活动复盘卡片验收门禁清单”的业务目标、功能边界和验收要点。 | 功能规格 |
-| [活动复盘摘要前端入口方案.md](./活动复盘摘要前端入口方案.md) | 描述“活动复盘摘要前端入口方案”的业务目标、功能边界和验收要点。 | 功能规格 |
-| [活动复盘摘要自动生成方案.md](./活动复盘摘要自动生成方案.md) | 描述“活动复盘摘要自动生成方案”的业务目标、功能边界和验收要点。 | 功能规格 |
-| [活动提醒智能摘要方案.md](./活动提醒智能摘要方案.md) | 描述“活动提醒智能摘要功能方案”的业务目标、功能边界和验收要点。 | 功能规格 |
-| [签到补签撤销评审.md](./签到补签撤销评审.md) | 描述“签到补签撤销流程代码审查报告”的业务目标、功能边界和验收要点。 | 功能规格 |
-| [训练完成智能复盘卡片功能规格.md](./训练完成智能复盘卡片功能规格.md) | 描述“训练完成智能复盘卡片功能规格”的业务目标、功能边界和验收要点。 | 功能规格 |
-| [训练提醒偏好通知失败降级门禁.md](./训练提醒偏好通知失败降级门禁.md) | 描述“跑团训练计划完成率质量门禁说明”的业务目标、功能边界和验收要点。 | 功能规格 |
-| [训练提醒偏好通知失败降级验收门禁.md](./训练提醒偏好通知失败降级验收门禁.md) | 描述“训练提醒偏好通知失败降级验收门禁”的业务目标、功能边界和验收要点。 | 功能规格 |
-| [训练提醒偏好验收检查清单.md](./训练提醒偏好验收检查清单.md) | 描述“训练提醒偏好验收检查清单”的业务目标、功能边界和验收要点。 | 功能规格 |
-| [跑团功能创意种子库.md](./跑团功能创意种子库.md) | 描述“跑团功能创意种子库”的业务目标、功能边界和验收要点。 | 功能规格 |
-| [跑团报名候补与自动补位验收清单.md](./跑团报名候补与自动补位验收清单.md) | 描述“跑团报名候补与自动补位中文验收清单”的业务目标、功能边界和验收要点。 | 功能规格 |
-| [跑团活动照片精选墙功能规格.md](./跑团活动照片精选墙功能规格.md) | 描述“跑团活动照片精选墙功能规格”的业务目标、功能边界和验收要点。 | 功能规格 |
+| [review-2026-06-06-t_112c4e46.md](./review-2026-06-06-t_112c4e46.md) | 描述“代码审查报告”的业务目标、功能范围和验收要点。 | 功能规格 |
+| [review-2026-06-06-t_20e6c8a6.md](./review-2026-06-06-t_20e6c8a6.md) | 描述“代码审查报告”的业务目标、功能范围和验收要点。 | 功能规格 |
+| [review-2026-06-06-t_340f4182.md](./review-2026-06-06-t_340f4182.md) | 描述“代码审查报告”的业务目标、功能范围和验收要点。 | 功能规格 |
+| [review-2026-06-06-t_890eb504.md](./review-2026-06-06-t_890eb504.md) | 描述“代码审查报告”的业务目标、功能范围和验收要点。 | 功能规格 |
+| [review-2026-06-06-t_f21eea00.md](./review-2026-06-06-t_f21eea00.md) | 描述“代码审查报告”的业务目标、功能范围和验收要点。 | 功能规格 |
+| [review-2026-06-06-t_f5a3c82c.md](./review-2026-06-06-t_f5a3c82c.md) | 描述“代码审查报告”的业务目标、功能范围和验收要点。 | 功能规格 |
+| [review-2026-06-06.md](./review-2026-06-06.md) | 描述“代码审查报告”的业务目标、功能范围和验收要点。 | 功能规格 |
+| [review-2026-06-08.md](./review-2026-06-08.md) | 描述“代码审查报告”的业务目标、功能范围和验收要点。 | 功能规格 |
+| [running_data_import_permission_self_checklist.md](./running_data_import_permission_self_checklist.md) | 描述“跑步数据导入访问控制自检清单”的业务目标、功能范围和验收要点。 | 功能规格 |
+| [running_data_import_wizard_quality_gate.md](./running_data_import_wizard_quality_gate.md) | 描述“跑步数据导入向导质量门禁清单”的业务目标、功能范围和验收要点。 | 功能规格 |
+| [running_data_import_wizard_smoke_checklist.md](./running_data_import_wizard_smoke_checklist.md) | 描述“跑团导入向导冒烟测试清单”的业务目标、功能范围和验收要点。 | 功能规格 |
+| [training_plan_calendar_export_quality_gate.md](./training_plan_calendar_export_quality_gate.md) | 描述“训练计划日历订阅导出质量门禁清单”的业务目标、功能范围和验收要点。 | 功能规格 |
+| [training_plan_completion_quality_gate.md](./training_plan_completion_quality_gate.md) | 描述“跑团训练计划完成率质量门禁说明”的业务目标、功能范围和验收要点。 | 功能规格 |
+| [training_reminder_preferences_acceptance_checklist.md](./training_reminder_preferences_acceptance_checklist.md) | 描述“训练提醒偏好验收检查清单”的业务目标、功能范围和验收要点。 | 功能规格 |
+| [任务变更影响范围审查清单.md](./任务变更影响范围审查清单.md) | 描述“任务变更影响范围审查清单”的业务目标、功能范围和验收要点。 | 功能规格 |
+| [任务验收证据自动归档清单.md](./任务验收证据自动归档清单.md) | 描述“任务验收证据自动归档清单”的业务目标、功能范围和验收要点。 | 功能规格 |
+| [候补名单功能方案.md](./候补名单功能方案.md) | 描述“活动报名候补名单功能方案”的业务目标、功能范围和验收要点。 | 功能规格 |
+| [创意任务去重策略.md](./创意任务去重策略.md) | 描述“创意任务去重策略”的业务目标、功能范围和验收要点。 | 功能规格 |
+| [创意任务去重评分样例.md](./创意任务去重评分样例.md) | 描述“创意任务去重评分样例”的业务目标、功能范围和验收要点。 | 功能规格 |
+| [创意任务验收冒烟清单.md](./创意任务验收冒烟清单.md) | 描述“创意任务验收冒烟清单”的业务目标、功能范围和验收要点。 | 功能规格 |
+| [成员活动轨迹导出说明页.md](./成员活动轨迹导出说明页.md) | 描述“成员活动轨迹导出说明页”的业务目标、功能范围和验收要点。 | 功能规格 |
+| [校园挑战赛排行榜功能规格.md](./校园挑战赛排行榜功能规格.md) | 描述“校园跑团挑战赛排行榜功能规格”的业务目标、功能范围和验收要点。 | 功能规格 |
+| [活动复盘卡片验收门禁清单.md](./活动复盘卡片验收门禁清单.md) | 描述“活动复盘卡片验收门禁清单”的业务目标、功能范围和验收要点。 | 功能规格 |
+| [活动复盘摘要前端入口方案.md](./活动复盘摘要前端入口方案.md) | 描述“活动复盘摘要前端入口方案”的业务目标、功能范围和验收要点。 | 功能规格 |
+| [活动复盘摘要自动生成方案.md](./活动复盘摘要自动生成方案.md) | 描述“活动复盘摘要自动生成方案”的业务目标、功能范围和验收要点。 | 功能规格 |
+| [活动提醒智能摘要方案.md](./活动提醒智能摘要方案.md) | 描述“活动提醒智能摘要功能方案”的业务目标、功能范围和验收要点。 | 功能规格 |
+| [签到补签撤销评审.md](./签到补签撤销评审.md) | 描述“签到补签撤销流程代码审查报告”的业务目标、功能范围和验收要点。 | 功能规格 |
+| [训练完成智能复盘卡片功能规格.md](./训练完成智能复盘卡片功能规格.md) | 描述“训练完成智能复盘卡片功能规格”的业务目标、功能范围和验收要点。 | 功能规格 |
+| [训练提醒偏好通知失败降级门禁.md](./训练提醒偏好通知失败降级门禁.md) | 描述“跑团训练计划完成率质量门禁说明”的业务目标、功能范围和验收要点。 | 功能规格 |
+| [训练提醒偏好通知失败降级验收门禁.md](./训练提醒偏好通知失败降级验收门禁.md) | 描述“训练提醒偏好通知失败降级验收门禁”的业务目标、功能范围和验收要点。 | 功能规格 |
+| [训练提醒偏好验收检查清单.md](./training_reminder_preferences_acceptance_checklist.md) | 描述“训练提醒偏好验收检查清单”的业务目标、功能范围和验收要点。 | 功能规格 |
+| [跑团功能创意初始库.md](./跑团功能创意初始库.md) | 描述“跑团功能创意初始库”的业务目标、功能范围和验收要点。 | 功能规格 |
+| [跑团报名候补与自动补位验收清单.md](./跑团报名候补与自动补位验收清单.md) | 描述“跑团报名候补与自动补位中文验收清单”的业务目标、功能范围和验收要点。 | 功能规格 |
+| [跑团活动照片精选墙功能规格.md](./跑团活动照片精选墙功能规格.md) | 描述“跑团活动照片精选墙功能规格”的业务目标、功能范围和验收要点。 | 功能规格 |
 
 ### 开发指南
 
