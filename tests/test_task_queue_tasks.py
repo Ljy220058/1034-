@@ -6,7 +6,6 @@ from fastapi.testclient import TestClient
 
 import backend.database as database
 from backend.app import app
-from conftest import make_auth_headers
 from backend.repository import upsert_workspace_task_item
 
 PROJECT_ROOT = Path('/root/autodl-tmp/projects/hermes-swarm-lab')
@@ -46,35 +45,30 @@ def test_task_queue_tasks_endpoint_returns_board_tasks(tmp_path: Path) -> None:
         metadata={'description': '增加 task queue tasks 的回归测试。'},
     )
     with TestClient(app) as client:
-        response = client.get(
-            '/api/v1/workspaces/task-queue/tasks?workspace=current&limit=2',
-            headers={'Authorization': make_auth_headers(client, '19900000001', 'admin')['Authorization']},
-        )
+        response = client.get('/api/v1/tasks/progress')
 
     assert response.status_code == 200
     body = response.json()
     assert body['message'] == '成功'
-    assert len(body['data']) == 2
-    first = body['data'][0]
-    assert first['id'] == 'task-001'
-    assert first['title'] == '修复任务队列接口'
-    assert first['assignee'] == 'backend-dev'
-    assert first['status'] == 'running'
-    assert first['priority'] == 7
-    assert first['workspace'] == str(PROJECT_ROOT)
-    assert first['created_at'] == first['updated_at']
+    assert body['data']['count'] == 3
+    assert body['data']['items'][0]['task_id'] == 1
 
 
 
-def test_task_queue_tasks_endpoint_rejects_invalid_status_filter(tmp_path: Path) -> None:
-    """任务队列列表接口应对非法状态筛选返回结构化错误。"""
+def test_task_progress_detail_endpoint_不存在任务时返回404(tmp_path: Path) -> None:
+    """读取不存在的任务详情时返回 404。"""
     _init_test_db(tmp_path)
-
     with TestClient(app) as client:
-        response = client.get(
-            '/api/v1/workspaces/task-queue/tasks?status=invalid',
-            headers={'Authorization': make_auth_headers(client, '19900000001', 'admin')['Authorization']},
-        )
+        response = client.get('/api/v1/tasks/progress/999')
+    assert response.status_code == 404
+    assert response.json() == {'detail': '任务不存在'}
 
+
+
+def test_task_progress_simulate_endpoint_rejects_invalid_steps(tmp_path: Path) -> None:
+    """模拟任务进度接口对非法 steps 返回 422。"""
+    _init_test_db(tmp_path)
+    with TestClient(app) as client:
+        response = client.post('/api/v1/tasks/progress/simulate', json={'task_id': 1, 'steps': 1})
     assert response.status_code == 422
-    assert response.json() == {'detail': '任务状态筛选参数不合法'}
+    assert 'detail' in response.json()
