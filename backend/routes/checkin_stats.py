@@ -1,159 +1,163 @@
 from __future__ import annotations
 
-from collections import Counter, defaultdict
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, datetime, timezone
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, status
 
-from ..database import connect
+from ..attendance import list_attendance
+from ..repository import get_member
 from ..models import ApiResponse
 
 router = APIRouter(prefix='/api/v1', tags=['checkin-stats'])
 
 
-def _member_exists(member_id: int) -> bool:
-    """检查成员是否存在。
+def _to_date(value: Any) -> date:
+    """Convert a database value to a date.
 
     Args:
-        member_id: 成员 ID。
+        value: Database value that may be a date or datetime string.
 
     Returns:
-        成员存在时返回 True。
+        Parsed date.
+
+    Raises:
+        ValueError: If the value cannot be parsed.
     """
-    with connect() as connection:
-        row = connection.execute('SELECT 1 FROM members WHERE id = ?', (member_id,)).fetchone()
-    return row is not None
+    if isinstance(value, date) and not isinstance(value, datetime):
+        return value
+    if isinstance(value, datetime):
+        return value.date()
+    if isinstance(value, str):
+        text = value.strip()
+        if not text:
+            raise ValueError('empty date')
+        return datetime.fromisoformat(text.replace('Z', '+00:00')).date()
+    raise ValueError('unsupported date value')
 
 
-
-def _fetch_attendance_rows(member_id: int) -> list[tuple[str, int]]:
-    """读取成员近年打卡数据。
-
-    Args:
-        member_id: 成员 ID。
-
-    Returns:
-        以日期字符串和打卡次数构成的行列表。
-    """
-    cutoff = (datetime.now(timezone.utc) - timedelta(days=365)).date().isoformat()
-    with connect() as connection:
-        rows = connection.execute(
-            '''
-            SELECT DATE(COALESCE(signed_in_at, created_at)) AS checkin_date, COUNT(*) AS count
-            FROM attendances
-            WHERE member_id = ?
-              AND status = 'signed_in'
-              AND DATE(COALESCE(signed_in_at, created_at)) >= ?
-            GROUP BY checkin_date
-            ORDER BY checkin_date ASC
-            ''',
-            (member_id, cutoff),
-        ).fetchall()
-    return [(str(row['checkin_date']), int(row['count'])) for row in rows]
-
-
-
-def _build_daily_map(rows: list[tuple[str, int]]) -> dict[str, int]:
-    """把打卡行转换为日期计数映射。"""
-    return {checkin_date: count for checkin_date, count in rows}
-
-
-
-def _count_month_checkins(rows: list[tuple[str, int]]) -> int:
-    """统计本月打卡天数。"""
-    today = date.today()
-    month_key = f'{today.year:04d}-{today.month:02d}'
-    return sum(1 for checkin_date, _ in rows if checkin_date.startswith(month_key))
-
-
-
-def _longest_streak(rows: list[tuple[str, int]]) -> int:
-    """计算历史最长连续打卡天数。"""
-    days = sorted({datetime.fromisoformat(checkin_date).date() for checkin_date, count in rows if count > 0})
-    if not days:
-        return 0
-    longest = current = 1
-    for index in range(1, len(days)):
-        if days[index] == days[index - 1] + timedelta(days=1):
-            current += 1
-        else:
-            longest = max(longest, current)
-            current = 1
-    return max(longest, current)
-
-
-
-def _current_streak(rows: list[tuple[str, int]]) -> int:
-    """计算当前连续打卡天数。"""
-    dates = {datetime.fromisoformat(checkin_date).date() for checkin_date, count in rows if count > 0}
-    if not dates:
-        return 0
-    streak = 0
-    cursor = date.today()
-    while cursor in dates:
-        streak += 1
-        cursor -= timedelta(days=1)
-    return streak
-
-
-
-def _last_365_dates(rows: list[tuple[str, int]]) -> list[dict[str, Any]]:
-    """返回最近 365 天的热力图日期列表。"""
-    counter: Counter[str] = Counter()
-    for checkin_date, count in rows:
-        counter[checkin_date] += count
-    start = date.today() - timedelta(days=364)
-    dates: list[dict[str, Any]] = []
-    for offset in range(365):
-        current = start + timedelta(days=offset)
-        key = current.isoformat()
-        dates.append({'date': key, 'count': counter.get(key, 0)})
+    records = list_attendance(member_id)
+    dates: list[date] = []
+    for record in records:
+        if getattr(record, 'status', '') != 'signed_in':
+            continue
+        signed_at = getattr(record, 'signed_in_at', None)
+        if signed_at is None:
+            continue
+        try:
+            dates.append(_to_date(signed_at))
+        except ValueError:
+            continue
+    dates.sort()
     return dates
 
 
-@router.get('/checkin-stats/{member_id}', response_model=ApiResponse)
-def read_checkin_stats(member_id: int) -> ApiResponse:
-    """获取成员打卡统计。
+def _continuous_days(dates: list[date]) -> tuple[int, int]:
+    """Compute current and longest consecutive check-in streaks.
 
     Args:
-        member_id: 成员 ID。
+        dates: Sorted signed-in dates.
 
     Returns:
-        包含连续打卡、本月打卡和近 365 天打卡日期列表的统计结果。
+        Current streak and longest streak.
+    """
+    if not dates:
+        return 0, 0
+    unique_dates = sorted(set(dates))
+    longest = 1
+    current = 1
+    prev = unique_dates[0]
+    for current_date in unique_dates[1:]:
+        if (current_date - prev).days == 1:
+            current += 1
+        else:
+            current = 1
+        longest = max(longest, current)
+        prev = current_date
+    today = date.today()
+    streak = 0
+    expected = today
+    for current_date in reversed(unique_dates):
+        if current_date == expected:
+            streak += 1
+            expected = expected.fromordinal(expected.toordinal() - 1)
+            continue
+        if current_date < expected:
+            break
+    return streak, longest
+
+
+def _monthly_days(dates: list[date]) -> int:
+    """Count signed-in days in the current month.
+
+    Args:
+        dates: Signed-in dates.
+
+    Returns:
+        Distinct signed-in days in current month.
+    """
+    today = date.today()
+    return len({item for item in dates if item.year == today.year and item.month == today.month})
+
+
+@router.get('/checkin-stats/{member_id}', response_model=ApiResponse)
+def get_checkin_stats(member_id: int) -> ApiResponse:
+    """Return member check-in statistics.
+
+    Args:
+        member_id: Member identifier.
+
+    Returns:
+        ApiResponse with streak, longest streak, month count, and recent dates.
 
     Raises:
-        HTTPException: 成员不存在时返回 404。
+        HTTPException: When the member does not exist.
     """
-    if not _member_exists(member_id):
+    if member_id <= 0:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail='成员ID必须大于 0')
+    member = get_member(member_id)
+    if member is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='成员不存在')
-
-    rows = _fetch_attendance_rows(member_id)
-    stats = {
+    dates = _fetch_checkin_dates(member_id)
+    current_streak, longest_streak = _continuous_days(dates)
+    today = date.today()
+    recent_dates = [item.isoformat() for item in dates if (today - item).days <= 365]
+    recent_dates = recent_dates[-365:]
+    payload = {
         'member_id': member_id,
-        'current_streak_days': _current_streak(rows),
-        'longest_streak_days': _longest_streak(rows),
-        'checkin_days_this_month': _count_month_checkins(rows),
-        'recent_365_days': [item['date'] for item in _last_365_dates(rows) if item['count'] > 0],
+        'current_streak_days': current_streak,
+        'longest_streak_days': longest_streak,
+        'checkin_days_this_month': _monthly_days(dates),
+        'recent_checkin_dates': recent_dates,
     }
-    return ApiResponse(data=stats, message='打卡统计获取成功')
+    return ApiResponse(data=payload, message='签到统计获取成功')
 
 
 @router.get('/checkin-heatmap/{member_id}', response_model=ApiResponse)
-def read_checkin_heatmap(member_id: int) -> ApiResponse:
-    """获取成员近一年热力图数据。
+def get_checkin_heatmap(member_id: int) -> ApiResponse:
+    """Return member check-in heatmap data.
 
     Args:
-        member_id: 成员 ID。
+        member_id: Member identifier.
 
     Returns:
-        近 365 天按日期聚合的打卡次数。
+        ApiResponse with daily counts for the last year.
 
     Raises:
-        HTTPException: 成员不存在时返回 404。
+        HTTPException: When the member does not exist.
     """
-    if not _member_exists(member_id):
+    if member_id <= 0:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail='成员ID必须大于 0')
+    member = get_member(member_id)
+    if member is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='成员不存在')
-
-    rows = _fetch_attendance_rows(member_id)
-    return ApiResponse(data=_last_365_dates(rows), message='打卡热力图获取成功')
+    dates = _fetch_checkin_dates(member_id)
+    cutoff = date.today().fromordinal(date.today().toordinal() - 365)
+    grouped: dict[str, int] = {}
+    for current_date in dates:
+        if current_date < cutoff:
+            continue
+        key = current_date.isoformat()
+        grouped[key] = grouped.get(key, 0) + 1
+    items = [{'date': key, 'count': grouped[key]} for key in sorted(grouped)]
+    return ApiResponse(data=items, message='热力图数据获取成功')

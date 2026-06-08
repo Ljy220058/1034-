@@ -7,6 +7,7 @@ from .activity_photos import router as activity_photos_router
 from .activity_rules import router as activity_rules_router
 from .achievements import router as achievements_router
 from .announcements import router as announcements_router
+from .checkin_stats import router as checkin_stats_router
 from .checkins import router as checkins_router
 from .creative_card_router import router as creative_card_router
 from .creative_tasks import router as creative_tasks_router
@@ -39,6 +40,7 @@ router_modules = (
     activities_router,
     activity_photos_router,
     checkins_router,
+    checkin_stats_router,
     announcements_router,
     task_board_intake_router,
     task_board_router,
