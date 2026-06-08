@@ -1,67 +1,51 @@
 from __future__ import annotations
 
 import sqlite3
+from collections import defaultdict
 from datetime import date, datetime, timedelta, timezone
-from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, status
 
-from ..database import DB_PATH
+from .. import database
 from ..models import ApiResponse
 
 router = APIRouter(prefix='/api/v1', tags=['checkin-stats'])
 
 
-def _resolve_db_path() -> Path:
-    """Resolve the active 查询语句ite database path.
-
-    Returns:
-        Resolved database path.
-    """
-    return Path(DB_PATH)
-
-
-def _connect() -> sqlite3.Connection:
-    """Open a 查询语句ite connection with row factory enabled.
-
-    Returns:
-        查询语句ite connection.
-    """
-    connection = sqlite3.connect(str(_resolve_db_path()))
-    connection.row_factory = sqlite3.Row
-    return connection
-
-
-def _member_exists(member_id: int) -> bool:
-    """Check whether a member exists.
+def _parse_date(value: str) -> date:
+    """解析 查询语句ite 日期文本。
 
     Args:
-        member_id: Member identifier.
+        value: 查询语句ite 中的日期或日期时间文本。
 
     Returns:
-        True when the member exists.
+        归一化后的日期对象。
+
+    Raises:
+        ValueError: 日期无法解析时抛出。
     """
-    with _connect() as connection:
-        row = connection.execute('SELECT 1 FROM members WHERE id = ?', (member_id,)).fetchone()
-    return row is not None
+    try:
+        return datetime.fromisoformat(value.replace('Z', '+00:00')).date()
+    except ValueError:
+        return date.fromisoformat(value)
 
 
-def _fetch_attendance_rows(member_id: int) -> list[sqlite3.Row]:
-    """Fetch all attendance rows for a member.
+def _attendance_rows(member_id: int) -> list[sqlite3.Row]:
+    """读取成员的已签到记录。
 
     Args:
-        member_id: Member identifier.
+        member_id: 成员 ID。
 
     Returns:
-        Attendance rows ordered by signed-in timestamp.
+        已签到 attendance 行列表。
     """
-    with _connect() as connection:
+    with database.connect() as connection:
         rows = connection.execute(
             '''
-            SELECT activity_id, member_id, signed_in_at, status
+            SELECT signed_in_at
             FROM attendances
-            WHERE member_id = ?
+            WHERE member_id = ? AND status = 'signed_in'
             ORDER BY signed_in_at ASC, id ASC
             ''',
             (member_id,),
@@ -69,155 +53,114 @@ def _fetch_attendance_rows(member_id: int) -> list[sqlite3.Row]:
     return list(rows)
 
 
-def _signed_in_dates(member_id: int) -> list[date]:
-    """Collect deduplicated signed-in dates for a member.
+def _build_stat_payload(member_id: int, rows: list[sqlite3.Row]) -> dict[str, Any]:
+    """构建签到统计响应。
 
     Args:
-        member_id: Member identifier.
+        member_id: 成员 ID。
+        rows: 已签到记录。
 
     Returns:
-        List of signed-in dates in ascending order.
+        可序列化的统计数据。
     """
-    dates: list[date] = []
-    seen: set[date] = set()
-    for row in _fetch_attendance_rows(member_id):
-        if row['status'] != 'signed_in' or not row['signed_in_at']:
-            continue
-        signed_in_at = datetime.fromisoformat(str(row['signed_in_at']).replace('Z', '+00:00'))
-        current_date = signed_in_at.date()
-        if current_date not in seen:
-            seen.add(current_date)
-            dates.append(current_date)
-    return dates
+    sign_in_dates = [_parse_date(str(row['signed_in_at'])) for row in rows]
+    if not sign_in_dates:
+        return {
+            'member_id': member_id,
+            'current_streak_days': 0,
+            'longest_streak_days': 0,
+            'month_checkin_days': 0,
+            'checkin_dates': [],
+        }
 
+    unique_dates = sorted(set(sign_in_dates))
+    date_set = set(unique_dates)
+    current_streak = 0
+    cursor = date.today()
+    while cursor in date_set:
+        current_streak += 1
+        cursor -= timedelta(days=1)
 
-def _month_range(reference: date) -> tuple[date, date]:
-    """Build the inclusive month range for a reference date.
-
-    Args:
-        reference: Reference date.
-
-    Returns:
-        Start and end dates for the current month.
-    """
-    start = reference.replace(day=1)
-    if start.month == 12:
-        end = date(start.year, 12, 31)
-    else:
-        next_month = date(start.year + (1 if start.month == 12 else 0), 1 if start.month == 12 else start.month + 1, 1)
-        end = next_month - timedelta(days=1)
-    return start, end
-
-
-def _last_365_days(reference: date) -> list[date]:
-    """Build a 365-day window ending on the reference date.
-
-    Args:
-        reference: Reference date.
-
-    Returns:
-        List of dates from the last 365 days.
-    """
-    start = reference - timedelta(days=364)
-    return [start + timedelta(days=offset) for offset in range(365)]
-
-
-def _streak_and_longest(dates: list[date]) -> tuple[int, int]:
-    """Compute current and longest signing streaks.
-
-    Args:
-        dates: Deduplicated signed-in dates.
-
-    Returns:
-        Current streak and longest streak.
-    """
-    if not dates:
-        return 0, 0
-    unique_dates = sorted(set(dates))
-    longest = 1
-    streak = 1
-    for previous, current_date in zip(unique_dates, unique_dates[1:]):
-        if current_date == previous + timedelta(days=1):
-            streak += 1
+    longest_streak = 0
+    running = 0
+    previous_day: date | None = None
+    for current_day in unique_dates:
+        if previous_day is not None and current_day == previous_day + timedelta(days=1):
+            running += 1
         else:
-            longest = max(longest, streak)
-            streak = 1
-    longest = max(longest, streak)
-    current = 1
-    for previous, current_date in zip(reversed(unique_dates[:-1]), reversed(unique_dates[1:])):
-        if previous + timedelta(days=1) == current_date:
-            current += 1
-        else:
-            break
-    return current, longest
+            running = 1
+        longest_streak = max(longest_streak, running)
+        previous_day = current_day
+
+    current_month = date.today().replace(day=1)
+    next_month = (current_month.replace(day=28) + timedelta(days=4)).replace(day=1)
+    month_checkins = sum(1 for value in sign_in_dates if current_month <= value < next_month)
+    recent_dates = [day.isoformat() for day in unique_dates if day >= date.today() - timedelta(days=364)]
+
+    return {
+        'member_id': member_id,
+        'current_streak_days': current_streak,
+        'longest_streak_days': longest_streak,
+        'month_checkin_days': month_checkins,
+        'checkin_dates': recent_dates,
+    }
 
 
-def _build_heatmap(member_id: int) -> list[dict[str, Any]]:
-    """Build 365-day heatmap data for a member.
+def _build_heatmap_payload(rows: list[sqlite3.Row]) -> list[dict[str, Any]]:
+    """构建近一年热力图数据。
 
     Args:
-        member_id: Member identifier.
+        rows: 已签到记录。
 
     Returns:
-        Heatmap rows with date and count.
+        按日期聚合后的热力图数据。
     """
-    reference = datetime.now(timezone.utc).date()
-    days = _last_365_days(reference)
-    counts = {day: 0 for day in days}
-    for row in _fetch_attendance_rows(member_id):
-        if row['status'] != 'signed_in' or not row['signed_in_at']:
-            continue
-        signed_in_at = datetime.fromisoformat(str(row['signed_in_at']).replace('Z', '+00:00'))
-        current_date = signed_in_at.date()
-        if current_date in counts:
-            counts[current_date] += 1
-    return [{'date': day.isoformat(), 'count': counts[day]} for day in days]
+    counts: dict[str, int] = defaultdict(int)
+    cutoff = date.today() - timedelta(days=364)
+    for row in rows:
+        signed_day = _parse_date(str(row['signed_in_at']))
+        if signed_day >= cutoff:
+            counts[signed_day.isoformat()] += 1
+    return [{'date': day, 'count': counts[day]} for day in sorted(counts)]
 
 
 @router.get('/checkin-stats/{member_id}', response_model=ApiResponse)
 def read_checkin_stats(member_id: int) -> ApiResponse:
-    """Return sign-in statistics for a member.
+    """获取成员签到统计。
 
     Args:
-        member_id: Member identifier.
+        member_id: 成员 ID。
 
     Returns:
-        ApiResponse with streak and date data.
+        ApiResponse 包裹的统计数据。
 
     Raises:
-        HTTPException: When the member does not exist.
+        HTTPException: 成员不存在时返回 404。
     """
-    if not _member_exists(member_id):
+    with database.connect() as connection:
+        member_exists = connection.execute('SELECT 1 FROM members WHERE id = ?', (member_id,)).fetchone()
+    if member_exists is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='成员不存在')
-    dates = _signed_in_dates(member_id)
-    current_streak, longest_streak = _streak_and_longest(dates)
-    reference = datetime.now(timezone.utc).date()
-    month_start, month_end = _month_range(reference)
-    month_checkins = sum(1 for day in dates if month_start <= day <= month_end)
-    return ApiResponse(
-        data={
-            'member_id': member_id,
-            'current_streak_days': current_streak,
-            'longest_streak_days': longest_streak,
-            'month_checkin_days': month_checkins,
-            'checkin_dates': [day.isoformat() for day in dates],
-        }
-    )
+    rows = _attendance_rows(member_id)
+    return ApiResponse(data=_build_stat_payload(member_id, rows))
 
 
 @router.get('/checkin-heatmap/{member_id}', response_model=ApiResponse)
 def read_checkin_heatmap(member_id: int) -> ApiResponse:
-    """Return 365-day check-in heatmap data for a member.
+    """获取成员近一年签到热力图数据。
 
     Args:
-        member_id: Member identifier.
+        member_id: 成员 ID。
 
     Returns:
-        ApiResponse with date/count rows.
+        ApiResponse 包裹的热力图数据。
 
     Raises:
-        HTTPException: When the member does not exist.
+        HTTPException: 成员不存在时返回 404。
     """
-    if not _member_exists(member_id):
+    with database.connect() as connection:
+        member_exists = connection.execute('SELECT 1 FROM members WHERE id = ?', (member_id,)).fetchone()
+    if member_exists is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='成员不存在')
-    return ApiResponse(data=_build_heatmap(member_id))
+    rows = _attendance_rows(member_id)
+    return ApiResponse(data=_build_heatmap_payload(rows))

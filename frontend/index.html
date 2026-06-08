@@ -185,40 +185,55 @@
    185|    .recommend-card { min-width: 0; padding: var(--space-5); border-radius: var(--radius); border: 1px solid var(--line); background: var(--surface-2); }
    186|    .recommend-card h3 { margin: 0 0 var(--space-2); }
    187|    .recommend-card p { margin: 0; color: var(--muted); }
-   188|
-   189|
-   190|
-   191|
+   .recommend-card h3 { margin: 0 0 var(--space-2); }
+   .recommend-card p { margin: 0; color: var(--muted); }
 
-    /* 成员个人数据仪表盘 */
-    .member-dashboard { display: grid; gap: var(--space-5); }
-    .member-dashboard__layout { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr); gap: var(--space-5); align-items: start; }
-    .member-dashboard__main, .member-dashboard__badges { min-width: 0; display: grid; gap: var(--space-4); }
-    .member-dashboard__metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-3); }
-    .member-dashboard-stat { min-width: 0; min-height: 8rem; padding: var(--space-4); border-radius: var(--radius); border: 1px solid var(--line); background: var(--surface-2); display: grid; gap: var(--space-2); }
-    .member-dashboard-stat span, .member-dashboard__badges-header p, .member-dashboard-chart__header p, .member-badge-card p, .member-badge-card__meta, .member-badge-progress span, .member-dashboard-stat small { color: var(--muted); }
-    .member-dashboard-stat strong { font-size: var(--font-xl); color: var(--brand-ink); line-height: 1.1; }
-    .member-dashboard-stat--empty { background: var(--surface-2); }
-    .member-dashboard-chart__header, .member-dashboard__badges-header, .member-badge-card__head { display: flex; align-items: start; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; }
-    .member-dashboard__chart { padding: var(--space-5); border-radius: var(--radius); border: 1px solid var(--line); background: linear-gradient(180deg, var(--card-bg), var(--card-bg-soft)); box-shadow: var(--shadow-soft); }
-    .member-dashboard-chart__header h3, .member-dashboard__badges-header h3 { margin: 0 0 var(--space-1); }
-    .member-dashboard-chart__bars { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: var(--space-3); align-items: end; min-height: 16rem; margin-top: var(--space-4); }
-    .member-dashboard-bar-card { min-width: 0; display: grid; gap: var(--space-2); justify-items: center; }
-    .member-dashboard-bar__value, .member-dashboard-bar-card strong { color: var(--text); font-size: var(--font-sm); }
-    .member-dashboard-bar__track { display: flex; align-items: end; width: 100%; min-height: 11rem; padding: var(--space-2); border-radius: var(--radius); background: var(--surface-2); border: 1px solid var(--line); }
-    .member-dashboard-bar__fill { display: block; width: 100%; height: var(--bar-height); border-radius: var(--radius-sm); background: linear-gradient(180deg, var(--brand), var(--brand-2)); box-shadow: var(--shadow-soft); }
-    .member-dashboard__badges { padding: var(--space-5); border-radius: var(--radius); border: 1px solid var(--line); background: linear-gradient(180deg, var(--card-bg), var(--card-bg-soft)); box-shadow: var(--shadow-soft); }
-    .member-dashboard__badge-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); }
-    .member-badge-card { min-width: 0; padding: var(--space-4); border-radius: var(--radius); border: 1px solid var(--line); background: var(--surface-2); display: grid; gap: var(--space-3); }
-    .member-badge-card.is-earned { border-color: var(--success-border); background: linear-gradient(180deg, var(--success-bg), var(--surface-2)); }
-    .member-badge-card.is-locked { border-color: var(--line); }
-    .member-badge-card__icon { width: calc(var(--space-9) + var(--space-2)); height: calc(var(--space-9) + var(--space-2)); border-radius: var(--radius-lg); display: grid; place-items: center; background: linear-gradient(135deg, var(--brand), var(--brand-2)); color: var(--ink); font-size: var(--font-lg); }
-    .member-badge-card.is-locked .member-badge-card__icon { background: var(--surface-3); color: var(--muted); }
-    .member-badge-card strong { font-size: var(--font-lg); color: var(--text); }
-    .member-badge-progress { display: grid; gap: var(--space-2); }
-    .member-badge-progress__track { height: 0.75rem; border-radius: var(--radius-lg); background: var(--surface-3); overflow: hidden; }
-    .member-badge-progress__track i { display: block; width: var(--progress-width); height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--brand), var(--brand-2)); }
-    .member-badge-empty { min-height: 14rem; }
+   /* 新人欢迎引导 */
+   .onboarding-shell { display: grid; gap: var(--space-6); }
+   .onboarding-hero { display: grid; gap: var(--space-5); }
+   .onboarding-hero__layout { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr); gap: var(--space-5); }
+   .onboarding-hero__footer { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); padding: var(--space-4); border-radius: var(--radius); border: 1px solid var(--line); background: var(--surface-2); }
+   .onboarding-hero__footer strong { display: block; margin-bottom: var(--space-1); color: var(--brand-ink); }
+   .onboarding-hero__footer p { margin: 0; color: var(--muted); }
+   .onboarding-steps, .onboarding-profile, .onboarding-checklist { padding: var(--space-5); }
+   .onboarding-profile__header h3, .onboarding-checklist .section-header h2 { margin: 0 0 var(--space-1); }
+   .onboarding-profile__header p { margin: 0; color: var(--muted); }
+   .onboarding-profile__list, .onboarding-checklist__body { display: grid; gap: var(--space-3); }
+   .onboarding-step-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-3); }
+   .onboarding-step { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-3); padding: var(--space-3); border-radius: var(--radius-sm); border: 1px solid var(--line); background: var(--surface-2); }
+   .onboarding-step.is-current { border-color: var(--chip-active-border); background: var(--chip-active-bg); }
+   .onboarding-step.is-done .onboarding-step__marker { background: var(--success-bg); border-color: var(--success-border); color: var(--success); }
+   .onboarding-step__marker { width: var(--timeline-node-size); height: var(--timeline-node-size); border-radius: 50%; display: grid; place-items: center; border: 1px solid var(--timeline-pending-border); background: var(--timeline-pending-bg); color: var(--muted); font-weight: 800; }
+   .onboarding-step strong, .onboarding-buddy strong { display: block; margin-bottom: var(--space-1); }
+   .onboarding-step p, .onboarding-buddy p, .onboarding-profile__header p { margin: 0; color: var(--muted); }
+   .onboarding-buddy { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-3); align-items: center; padding: var(--space-3); border-radius: var(--radius-sm); border: 1px solid var(--line); background: var(--surface-2); }
+   .onboarding-buddy__avatar { width: calc(var(--space-9) + var(--space-2)); height: calc(var(--space-9) + var(--space-2)); border-radius: 50%; display: grid; place-items: center; background: linear-gradient(135deg, var(--brand), var(--brand-2)); color: var(--ink); font-weight: 800; }
+   .onboarding-check { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding: var(--space-4); border-radius: var(--radius-sm); border: 1px solid var(--line); background: var(--surface-2); }
+   .onboarding-check__left { display: flex; align-items: center; gap: var(--space-3); min-width: 0; }
+   .onboarding-check__left input { width: 1.1rem; height: 1.1rem; accent-color: var(--brand); flex: 0 0 auto; }
+   .onboarding-check strong { display: block; margin-bottom: var(--space-1); }
+   .onboarding-check small { color: var(--muted); }
+   .onboarding-skeleton { height: calc(var(--space-8) * 2); border-radius: var(--radius); background: linear-gradient(90deg, var(--surface-2), var(--surface-3), var(--surface-2)); background-size: 200% 100%; animation: shimmer 1.5s ease-in-out infinite; }
+   .onboarding-shell--loading { gap: var(--space-4); }
+
+   @keyframes spin { to { transform: rotate(360deg); } }
+   @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+   @media (max-width: 960px) {
+     .sidebar-hero, .sidebar-toolbar, .member-dashboard__layout, .onboarding-hero__layout { grid-template-columns: 1fr; }
+     .sidebar-grid, .recommend-grid, .member-dashboard__metrics, .member-dashboard__badge-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+     .member-dashboard-chart__bars { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+   }
+
+   @media (max-width: 720px) {
+     .shell { width: min(calc(100% - var(--space-5)), var(--max)); }
+     .sidebar-grid, .recommend-grid, .member-dashboard__metrics, .member-dashboard__badge-grid, .metric-grid, .worker-counts, .onboarding-hero__footer { grid-template-columns: 1fr; }
+     .sidebar-hero, .section, .member-dashboard__chart, .member-dashboard__badges, .onboarding-steps, .onboarding-profile, .onboarding-checklist { padding: var(--space-5); }
+     .onboarding-check, .worker-card__actions, .sidebar-hero__actions { flex-direction: column; }
+     .onboarding-check { align-items: stretch; }
+     .onboarding-check__left { align-items: flex-start; }
+   }
+
 
     /* 成员跑量排行榜 */
    192|    .leaderboard-panel { display: grid; gap: var(--space-5); }

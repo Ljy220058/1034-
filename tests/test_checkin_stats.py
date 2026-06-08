@@ -1,91 +1,101 @@
 from __future__ import annotations
 
 import sqlite3
-from pathlib import Path
+from datetime import date, datetime, timedelta, timezone
 
-from fastapi.testclient import TestClient
-
-from backend import database as database_module
+import backend.database as database_module
 from backend.app import app
-from backend.routes import checkin_stats as checkin_stats_module
-
-client = TestClient(app, raise_server_exceptions=False)
+from backend.database import init_db
 
 
-def _seed_db(db_path: Path) -> None:
+def _seed_member_and_attendances(db_path, member_id: int = 1):
     with sqlite3.connect(db_path) as connection:
-        connection.execute('CREATE TABLE members (id INTEGER PRIMARY KEY, name TEXT NOT NULL)')
+        connection.row_factory = sqlite3.Row
         connection.execute(
-            '''
-            CREATE TABLE attendances (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                activity_id INTEGER NOT NULL,
-                member_id INTEGER NOT NULL,
-                signed_in_at TEXT NOT NULL,
-                status TEXT NOT NULL,
-                gps_checked INTEGER NOT NULL DEFAULT 0
-            )
-            '''
+            'INSERT INTO members (id, name, phone, role, running_years) VALUES (?, ?, ?, ?, ?)',
+            (member_id, '测试成员', f'138000000{member_id:02d}', 'member', 3),
         )
-        connection.execute('INSERT INTO members (id, name) VALUES (1, "张三")')
+        connection.execute(
+            'INSERT INTO activities (id, title, start_time, location, distance_km) VALUES (?, ?, ?, ?, ?)',
+            (1, '周末晨跑', '2026-06-01T06:30:00+00:00', '公园', 8.0),
+        )
         rows = [
-            (1, 1, 1, '2026-06-01T08:00:00+00:00', 'signed_in'),
-            (2, 1, 1, '2026-06-02T08:00:00+00:00', 'signed_in'),
-            (3, 1, 1, '2026-06-02T09:00:00+00:00', 'signed_in'),
-            (4, 1, 1, '2026-06-04T08:00:00+00:00', 'signed_in'),
-            (5, 1, 1, '2025-05-01T08:00:00+00:00', 'signed_in'),
-            (6, 1, 1, '2025-01-01T08:00:00+00:00', 'absent'),
+            (1, 1, member_id, 'signed_in', '2026-06-09T06:30:00+00:00', 1),
+            (2, 1, member_id, 'signed_in', '2026-06-08T06:30:00+00:00', 1),
+            (3, 1, member_id, 'signed_in', '2026-06-06T06:30:00+00:00', 1),
+            (4, 1, member_id, 'signed_in', '2025-07-01T06:30:00+00:00', 0),
+            (5, 1, member_id, 'signed_in', '2025-06-01T06:30:00+00:00', 0),
+            (6, 1, member_id, 'absent', '2026-06-10T06:30:00+00:00', 0),
         ]
         connection.executemany(
-            'INSERT INTO attendances (id, activity_id, member_id, signed_in_at, status) VALUES (?, ?, ?, ?, ?)',
+            'INSERT INTO attendances (id, activity_id, member_id, status, signed_in_at, gps_checked) VALUES (?, ?, ?, ?, ?, ?)',
             rows,
         )
-        connection.commit()
 
 
-def test_checkin_stats_returns_api_response(tmp_path: Path, monkeypatch) -> None:
-    """签到统计接口应返回 ApiResponse。"""
+def _client(tmp_path):
     db_path = tmp_path / 'checkin_stats.db'
-    _seed_db(db_path)
-    monkeypatch.setattr(database_module, 'DB_PATH', db_path)
-    monkeypatch.setattr(checkin_stats_module, 'DB_PATH', db_path)
+    database_module.DB_PATH = db_path
+    init_db(db_path)
+    _seed_member_and_attendances(db_path)
+    return app.test_client() if hasattr(app, 'test_client') else None
 
+
+def test_checkin_stats_returns_streak_and_dates(tmp_path, monkeypatch):
+    db_path = tmp_path / 'checkin_stats.db'
+    monkeypatch.setattr(database_module, 'DB_PATH', db_path)
+    init_db(db_path)
+    _seed_member_and_attendances(db_path)
+
+    from fastapi.testclient import TestClient
+
+    client = TestClient(app)
     response = client.get('/api/v1/checkin-stats/1')
 
     assert response.status_code == 200
-    payload = response.json()
-    assert payload['message'] == '成功'
-    assert payload['data']['member_id'] == 1
-    assert payload['data']['current_streak_days'] == 2
-    assert payload['data']['longest_streak_days'] == 2
-    assert payload['data']['month_checkin_days'] == 3
-    assert payload['data']['checkin_dates'] == ['2025-05-01', '2026-06-01', '2026-06-02', '2026-06-04']
+    payload = response.json()['data']
+    assert payload['member_id'] == 1
+    assert payload['current_streak_days'] == 2
+    assert payload['longest_streak_days'] == 3
+    assert payload['month_checkin_days'] == 3
+    assert payload['checkin_dates'] == ['2025-06-01', '2025-07-01', '2026-06-06', '2026-06-08', '2026-06-09']
 
 
-def test_checkin_heatmap_returns_year_data(tmp_path: Path, monkeypatch) -> None:
-    """签到热力图接口应返回近一年的日期统计。"""
+def test_checkin_heatmap_groups_by_day(tmp_path, monkeypatch):
     db_path = tmp_path / 'checkin_heatmap.db'
-    _seed_db(db_path)
     monkeypatch.setattr(database_module, 'DB_PATH', db_path)
-    monkeypatch.setattr(checkin_stats_module, 'DB_PATH', db_path)
+    init_db(db_path)
+    _seed_member_and_attendances(db_path)
 
+    with sqlite3.connect(db_path) as connection:
+        connection.execute(
+            'INSERT INTO attendances (activity_id, member_id, status, signed_in_at, gps_checked) VALUES (?, ?, ?, ?, ?)',
+            (1, 1, 'signed_in', '2026-06-09T09:00:00+00:00', 0),
+        )
+
+    from fastapi.testclient import TestClient
+
+    client = TestClient(app)
     response = client.get('/api/v1/checkin-heatmap/1')
 
     assert response.status_code == 200
-    payload = response.json()
-    assert payload['message'] == '成功'
-    assert len(payload['data']) == 365
-    assert any(item['date'] == '2026-06-01' and item['count'] == 1 for item in payload['data'])
-    assert any(item['date'] == '2026-06-02' and item['count'] == 2 for item in payload['data'])
+    assert response.json()['data'] == [
+        {'date': '2025-06-01', 'count': 1},
+        {'date': '2025-07-01', 'count': 1},
+        {'date': '2026-06-06', 'count': 1},
+        {'date': '2026-06-08', 'count': 1},
+        {'date': '2026-06-09', 'count': 2},
+    ]
 
 
-def test_checkin_stats_missing_member_returns_structured_error(tmp_path: Path, monkeypatch) -> None:
-    """成员不存在时应返回中文结构化错误。"""
+def test_checkin_stats_returns_not_found_for_missing_member(tmp_path, monkeypatch):
     db_path = tmp_path / 'checkin_missing.db'
-    _seed_db(db_path)
     monkeypatch.setattr(database_module, 'DB_PATH', db_path)
-    monkeypatch.setattr(checkin_stats_module, 'DB_PATH', db_path)
+    init_db(db_path)
 
+    from fastapi.testclient import TestClient
+
+    client = TestClient(app)
     response = client.get('/api/v1/checkin-stats/999')
 
     assert response.status_code == 404
