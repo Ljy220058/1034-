@@ -1,120 +1,92 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
-from pathlib import Path
 import sqlite3
-from tempfile import TemporaryDirectory
+from pathlib import Path
 
 from fastapi.testclient import TestClient
 
+from backend import database as database_module
 from backend.app import app
+from backend.routes import checkin_stats as checkin_stats_module
 
-client = TestClient(app)
+client = TestClient(app, raise_server_exceptions=False)
 
 
-def _seed_member_and_attendance(db_path: Path) -> int:
+def _seed_db(db_path: Path) -> None:
     with sqlite3.connect(db_path) as connection:
-        connection.row_factory = sqlite3.Row
+        connection.execute('CREATE TABLE members (id INTEGER PRIMARY KEY, name TEXT NOT NULL)')
         connection.execute(
-            """
-            INSERT INTO members (name, phone, role, running_years, pace, usual_distance_km, training_goal, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-            (
-                '张三',
-                '13800000000',
-                'member',
-                3,
-                '5:30',
-                10.0,
-                '保持跑步习惯',
-                '2026-01-01T00:00:00+00:00',
-                '2026-01-01T00:00:00+00:00',
-            ),
-        )
-        member_id = connection.execute('SELECT id FROM members WHERE phone = ?', ('13800000000',)).fetchone()['id']
-        connection.execute(
-            """
-            INSERT INTO activities (title, start_time, location, route, distance_km, pace_group, description, max_participants, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-            (
-                '晨跑',
-                '2026-01-01T06:00:00+00:00',
-                '公园',
-                None,
-                5.0,
-                None,
-                None,
-                30,
-                '2026-01-01T00:00:00+00:00',
-                '2026-01-01T00:00:00+00:00',
-            ),
-        )
-        activity_id = connection.execute('SELECT id FROM activities WHERE title = ?', ('晨跑',)).fetchone()['id']
-        for day in ('2026-05-01T06:00:00+00:00', '2026-05-02T06:00:00+00:00', '2026-05-04T06:00:00+00:00'):
-            connection.execute(
-                """
-                INSERT INTO attendances (activity_id, member_id, status, signed_in_at, gps_checked)
-                VALUES (?, ?, ?, ?, ?)
-                """,
-                (activity_id, member_id, 'signed_in', day, 1),
+            '''
+            CREATE TABLE attendances (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                activity_id INTEGER NOT NULL,
+                member_id INTEGER NOT NULL,
+                signed_in_at TEXT NOT NULL,
+                status TEXT NOT NULL,
+                gps_checked INTEGER NOT NULL DEFAULT 0
             )
-        connection.execute(
-            """
-            INSERT INTO attendances (activity_id, member_id, status, signed_in_at, gps_checked)
-            VALUES (?, ?, ?, ?, ?)
-            """,
-            (activity_id, member_id, 'absent', '2026-05-03T06:00:00+00:00', 0),
+            '''
+        )
+        connection.execute('INSERT INTO members (id, name) VALUES (1, "张三")')
+        rows = [
+            (1, 1, 1, '2026-06-01T08:00:00+00:00', 'signed_in'),
+            (2, 1, 1, '2026-06-02T08:00:00+00:00', 'signed_in'),
+            (3, 1, 1, '2026-06-02T09:00:00+00:00', 'signed_in'),
+            (4, 1, 1, '2026-06-04T08:00:00+00:00', 'signed_in'),
+            (5, 1, 1, '2025-05-01T08:00:00+00:00', 'signed_in'),
+            (6, 1, 1, '2025-01-01T08:00:00+00:00', 'absent'),
+        ]
+        connection.executemany(
+            'INSERT INTO attendances (id, activity_id, member_id, signed_in_at, status) VALUES (?, ?, ?, ?, ?)',
+            rows,
         )
         connection.commit()
-    return member_id
 
 
-def test_checkin_stats_returns_streak_and_month_counts() -> None:
-    with TemporaryDirectory() as tmpdir:
-        db_path = Path(tmpdir) / 'test.db'
-        import backend.repository as repository
+def test_checkin_stats_returns_api_response(tmp_path: Path, monkeypatch) -> None:
+    """签到统计接口应返回 ApiResponse。"""
+    db_path = tmp_path / 'checkin_stats.db'
+    _seed_db(db_path)
+    monkeypatch.setattr(database_module, 'DB_PATH', db_path)
+    monkeypatch.setattr(checkin_stats_module, 'DB_PATH', db_path)
 
-        original_db_path = repository.DB_PATH
-        repository.DB_PATH = db_path
-        try:
-            _seed_member_and_attendance(db_path)
-            response = client.get('/api/v1/checkin-stats/1')
-            assert response.status_code == 200
-            payload = response.json()
-            assert payload['message'] == '签到统计获取成功'
-            assert payload['data']['current_streak_days'] == 0
-            assert payload['data']['longest_streak_days'] == 2
-            assert payload['data']['checkin_days_this_month'] == 0
-            assert payload['data']['recent_checkin_dates'] == ['2026-05-01', '2026-05-02', '2026-05-04']
-        finally:
-            repository.DB_PATH = original_db_path
+    response = client.get('/api/v1/checkin-stats/1')
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload['message'] == '成功'
+    assert payload['data']['member_id'] == 1
+    assert payload['data']['current_streak_days'] == 2
+    assert payload['data']['longest_streak_days'] == 2
+    assert payload['data']['month_checkin_days'] == 3
+    assert payload['data']['checkin_dates'] == ['2025-05-01', '2026-06-01', '2026-06-02', '2026-06-04']
 
 
-def test_checkin_heatmap_groups_daily_counts() -> None:
-    with TemporaryDirectory() as tmpdir:
-        db_path = Path(tmpdir) / 'test.db'
-        import backend.repository as repository
+def test_checkin_heatmap_returns_year_data(tmp_path: Path, monkeypatch) -> None:
+    """签到热力图接口应返回近一年的日期统计。"""
+    db_path = tmp_path / 'checkin_heatmap.db'
+    _seed_db(db_path)
+    monkeypatch.setattr(database_module, 'DB_PATH', db_path)
+    monkeypatch.setattr(checkin_stats_module, 'DB_PATH', db_path)
 
-        original_db_path = repository.DB_PATH
-        repository.DB_PATH = db_path
-        try:
-            _seed_member_and_attendance(db_path)
-            response = client.get('/api/v1/checkin-heatmap/1')
-            assert response.status_code == 200
-            payload = response.json()
-            assert payload['message'] == '热力图数据获取成功'
-            assert payload['data'] == [
-                {'date': '2026-05-01', 'count': 1},
-                {'date': '2026-05-02', 'count': 1},
-                {'date': '2026-05-04', 'count': 1},
-            ]
-        finally:
-            repository.DB_PATH = original_db_path
+    response = client.get('/api/v1/checkin-heatmap/1')
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload['message'] == '成功'
+    assert len(payload['data']) == 365
+    assert any(item['date'] == '2026-06-01' and item['count'] == 1 for item in payload['data'])
+    assert any(item['date'] == '2026-06-02' and item['count'] == 2 for item in payload['data'])
 
 
-def test_checkin_stats_rejects_invalid_member_id() -> None:
-    response = client.get('/api/v1/checkin-stats/0')
-    assert response.status_code == 422
-    assert response.json() == {'detail': '成员ID必须大于 0'}
+def test_checkin_stats_missing_member_returns_structured_error(tmp_path: Path, monkeypatch) -> None:
+    """成员不存在时应返回中文结构化错误。"""
+    db_path = tmp_path / 'checkin_missing.db'
+    _seed_db(db_path)
+    monkeypatch.setattr(database_module, 'DB_PATH', db_path)
+    monkeypatch.setattr(checkin_stats_module, 'DB_PATH', db_path)
+
+    response = client.get('/api/v1/checkin-stats/999')
+
+    assert response.status_code == 404
+    assert response.json() == {'detail': '成员不存在'}
