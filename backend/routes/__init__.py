@@ -29,7 +29,7 @@ from .task_board_intake import router as task_board_intake_router
 from .task_imports import router as task_imports_router
 from .tasks import router as tasks_router
 from .training_pace import router as training_pace_router
-from .training_plan_completion import router as training_plan_completion_router
+from .team_challenges import router as team_challenges_router
 from .worker_dashboard import router as worker_dashboard_router
 from .worker_routing_recommendations import router as worker_routing_recommendations_router
 from .workers import router as workers_router
@@ -64,7 +64,7 @@ router_modules = (
     member_ranking_router,
     running_data_imports_router,
     training_pace_router,
-    training_plan_completion_router,
+    team_challenges_router,
     worker_routing_recommendations_router,
     achievements_router,
     new_member_onboarding_router,

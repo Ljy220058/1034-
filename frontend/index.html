@@ -1,264 +1,167 @@
-     1|<!DOCTYPE html>
-     2|<html lang="zh-CN">
-     3|<head>
-     4|  <meta charset="UTF-8" />
-     5|  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-     6|  <title>1034 跑团管理系统 | 空闲工人创意墙</title>
-     7|  <style>
-     8|    :root {
-     9|      color-scheme: dark;
-    10|      --bg: #08111d;
-    11|      --bg-2: #0b1728;
-    12|      --surface: rgba(15, 23, 42, 0.84);
-    13|      --surface-2: rgba(255, 255, 255, 0.04);
-    14|      --surface-3: rgba(255, 255, 255, 0.07);
-    15|      --text: #ecf4ff;
-    16|      --muted: #9fb2ca;
-    17|      --line: rgba(148, 163, 184, 0.18);
-    18|      --line-strong: rgba(148, 163, 184, 0.28);
-    19|      --brand: #38bdf8;
-    20|      --brand-2: #22c55e;
-    21|      --brand-ink: #bdeaff;
-    22|      --ink: #04111f;
-    23|      --success: #8ff0bb;
-    24|      --warning: #ffd58a;
-    25|      --danger: #ffb2bf;
-    26|      --success-bg: rgba(34, 197, 94, 0.12);
-    27|      --warning-bg: rgba(245, 158, 11, 0.12);
-    28|      --danger-bg: rgba(251, 113, 133, 0.12);
-    29|      --success-border: rgba(34, 197, 94, 0.22);
-    30|      --warning-border: rgba(245, 158, 11, 0.22);
-    31|      --danger-border: rgba(251, 113, 133, 0.22);
-    32|      --chip-bg: rgba(255, 255, 255, 0.04);
-    33|      --chip-active-bg: rgba(56, 189, 248, 0.16);
-    34|      --chip-active-border: rgba(56, 189, 248, 0.34);
-    35|      --hover-bg: rgba(255, 255, 255, 0.05);
-    36|      --card-bg: rgba(15, 23, 42, 0.94);
-    37|      --card-bg-soft: rgba(15, 23, 42, 0.78);
-    38|      --topbar-bg: rgba(8, 17, 29, 0.78);
-    39|      --shadow: 0 20px 55px rgba(2, 6, 23, 0.42);
-    40|      --shadow-soft: 0 14px 36px rgba(2, 6, 23, 0.22);
-    41|      --focus-ring: rgba(56, 189, 248, 0.12);
-    42|      --radius-sm: 14px;
-    43|      --radius: 20px;
-    44|      --radius-lg: 28px;
-    45|      --transition: 180ms ease;
-    46|      --max: 1160px;
-    47|      --header-height: 76px;
-    48|      --field-min: 240px;
-    49|      --space-1: 6px;
-    50|      --space-2: 10px;
-    51|      --space-3: 12px;
-    52|      --space-4: 16px;
-    53|      --space-5: 18px;
-    54|      --space-6: 22px;
-    55|      --space-7: 24px;
-    56|      --space-8: 28px;
-    57|      --space-9: 34px;
-    58|      --font-xs: 0.78rem;
-    59|      --font-sm: 0.88rem;
-    60|      --font-md: 1rem;
-    61|      --font-lg: 1.16rem;
-    62|      --font-xl: clamp(1.35rem, 3.5vw, 2rem);
-    63|      --font-hero: clamp(2rem, 6vw, 4.1rem);
-    64|      --panel-gradient: linear-gradient(180deg, rgba(15, 23, 42, 0.96), rgba(15, 23, 42, 0.82));
-    65|      --panel-soft: rgba(255, 255, 255, 0.05);
-    66|      --heat-idle-bg: var(--success-bg);
-    67|      --heat-idle-border: var(--success-border);
-    68|      --heat-idle-text: var(--success);
-    69|      --heat-warm-bg: var(--warning-bg);
-    70|      --heat-warm-border: var(--warning-border);
-    71|      --heat-warm-text: var(--warning);
-    72|      --heat-hot-bg: var(--danger-bg);
-    73|      --heat-hot-border: var(--danger-border);
-    74|      --heat-hot-text: var(--danger);
-    75|      --timeline-node-size: 36px;
-    76|      --timeline-line: var(--line-strong);
-    77|      --timeline-active-bg: var(--success-bg);
-    78|      --timeline-active-border: var(--success-border);
-    79|      --timeline-pending-bg: var(--surface-2);
-    80|      --timeline-pending-border: var(--line);
-    81|      --creative-group-min: 280px;
-    82|    }
-    83|
-    84|    * { box-sizing: border-box; }
-    85|    html { overflow-x: hidden; scroll-behavior: smooth; scroll-padding-top: calc(var(--header-height) + var(--space-4)); }
-    86|    body {
-    87|      margin: 0;
-    88|      min-height: 100vh;
-    89|      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    90|      color: var(--text);
-    91|      line-height: 1.55;
-    92|      background:
-    93|        radial-gradient(circle at 12% 8%, rgba(56, 189, 248, 0.18), transparent 28%),
-    94|        radial-gradient(circle at 84% 4%, rgba(34, 197, 94, 0.13), transparent 24%),
-    95|        linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 100%);
-    96|      overflow-x: hidden;
-    97|    }
-    98|    a { color: inherit; text-decoration: none; }
-    99|    button, input, select { font: inherit; }
-   100|    button { border: 0; background: none; }
-   101|    h1, h2, h3, p, dl { margin-top: 0; }
-   102|    .shell { width: min(calc(100% - var(--space-7)), var(--max)); margin: 0 auto; }
-   103|    .topbar { position: sticky; top: 0; z-index: 30; border-bottom: 1px solid var(--line); background: var(--topbar-bg); backdrop-filter: blur(14px); }
-   104|    .topbar-inner { min-height: var(--header-height); display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding: var(--space-3) 0; }
-   105|    .brand { display: flex; align-items: center; gap: var(--space-3); min-width: 0; }
-   106|    .brand-mark { width: 42px; height: 42px; border-radius: var(--radius-sm); display: grid; place-items: center; background: linear-gradient(135deg, var(--brand), var(--brand-2)); color: var(--ink); font-weight: 800; box-shadow: var(--shadow); flex: 0 0 auto; }
-   107|    .brand h1 { margin: 0; font-size: var(--font-md); line-height: 1.2; }
-   108|    .brand p { margin: 2px 0 0; color: var(--muted); font-size: var(--font-sm); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 52vw; }
-   109|    .nav { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--space-2); }
-   110|    .nav a { min-height: 40px; display: inline-flex; align-items: center; padding: 0 var(--space-3); border-radius: var(--radius-lg); border: 1px solid transparent; color: var(--muted); font-size: var(--font-sm); transition: transform var(--transition), background var(--transition), border-color var(--transition), color var(--transition); }
-   111|    .nav a:hover, .nav a:focus-visible { color: var(--text); border-color: var(--line); background: var(--hover-bg); outline: none; transform: translateY(-1px); }
-   112|    main { padding: var(--space-6) 0 var(--space-9); overflow: clip; }
-   113|    .card { border: 1px solid var(--line); border-radius: var(--radius); background: linear-gradient(180deg, var(--card-bg), var(--card-bg-soft)); box-shadow: var(--shadow); transition: transform var(--transition), box-shadow var(--transition), border-color var(--transition); }
-   114|    .card:hover { transform: translateY(-2px); border-color: var(--chip-active-border); }
-   115|    .section { margin-top: var(--space-6); padding: var(--space-7); }
-   116|    .section-header { display: flex; align-items: end; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-5); }
-   117|    .section-header h2 { margin: 0 0 var(--space-1); font-size: var(--font-xl); }
-   118|    .section-header p { margin: 0; color: var(--muted); }
-   119|    .summary-chip { padding: var(--space-1) var(--space-3); border-radius: var(--radius-lg); border: 1px solid var(--line); background: var(--chip-bg); color: var(--muted); font-size: var(--font-xs); }
-   120|    .summary-chip strong { color: var(--brand-ink); }
-   121|    .btn, .filter-chip { min-height: 46px; display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2); border-radius: var(--radius-sm); border: 1px solid transparent; padding: 0 var(--space-4); cursor: pointer; font-weight: 700; transition: transform var(--transition), background var(--transition), border-color var(--transition), box-shadow var(--transition), opacity var(--transition); user-select: none; }
-   122|    .btn:hover, .filter-chip:hover, .btn:focus-visible, .filter-chip:focus-visible { transform: translateY(-1px); outline: none; box-shadow: var(--shadow-soft); }
-   123|    .btn:active, .filter-chip:active { transform: translateY(0); box-shadow: none; }
-   124|    .btn:disabled, .filter-chip:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
-   125|    .btn-primary { background: linear-gradient(135deg, var(--brand), var(--brand-2)); color: var(--ink); }
-   126|    .btn-secondary, .filter-chip { background: var(--chip-bg); color: var(--text); border-color: var(--line); }
-   127|    .filter-chip.is-active { background: var(--chip-active-bg); border-color: var(--chip-active-border); color: var(--brand-ink); }
-   128|    .spinner { width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--line); border-top-color: var(--brand); animation: spin 1s linear infinite; display: inline-block; }
-   129|
-   130|    .sidebar-shell { display: grid; gap: var(--space-6); }
-   131|    .sidebar-hero { position: relative; overflow: hidden; padding: var(--space-8); display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(var(--field-min), 0.85fr); gap: var(--space-5); align-items: stretch; }
-   132|    .sidebar-hero::before { content: ""; position: absolute; inset: auto var(--space-8) var(--space-8) auto; width: 44%; height: 48%; border-radius: var(--radius-lg); background: linear-gradient(135deg, rgba(56, 189, 248, 0.44), rgba(34, 197, 94, 0.34)); filter: blur(42px); opacity: 0.72; pointer-events: none; }
-   133|    .sidebar-hero > * { position: relative; z-index: 1; }
-   134|    .sidebar-hero__copy { display: grid; gap: var(--space-3); align-content: center; min-width: 0; }
-   135|    .hero__eyebrow { display: inline-flex; width: fit-content; margin-bottom: var(--space-4); padding: var(--space-1) var(--space-3); border-radius: var(--radius-lg); border: 1px solid var(--chip-active-border); background: var(--chip-active-bg); color: var(--brand-ink); font-weight: 800; }
-   136|    .sidebar-hero h2 { margin: 0; font-size: var(--font-hero); line-height: 1.02; letter-spacing: -0.04em; }
-   137|    .sidebar-hero p { margin: 0; color: var(--muted); }
-   138|    .sidebar-hero__actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
-   139|    .sidebar-hero__actions .btn { flex: 1 1 150px; }
-   140|    .sidebar-hero__panel { display: grid; gap: var(--space-4); min-width: 0; padding: var(--space-5); border-radius: var(--radius); border: 1px solid var(--line); background: linear-gradient(180deg, var(--card-bg), var(--card-bg-soft)); box-shadow: var(--shadow-soft); }
-   141|    .metric-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); }
-   142|    .metric-grid article { min-height: 92px; padding: var(--space-4); border-radius: var(--radius-sm); border: 1px solid var(--line); background: var(--surface-2); }
-   143|    .metric-grid span { display: block; color: var(--muted); font-size: var(--font-sm); }
-   144|    .metric-grid strong { display: block; margin-top: var(--space-2); font-size: var(--font-lg); color: var(--brand-ink); line-height: 1.15; }
-   145|    .sidebar-status { padding: var(--space-4); border-radius: var(--radius-sm); border: 1px solid var(--line); background: var(--surface-2); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-3); }
-   146|    .sidebar-status strong { color: var(--text); }
-   147|    .sidebar-status p { flex: 1 1 220px; }
-   148|
-   149|    .sidebar-panel { display: grid; gap: var(--space-4); }
-   150|    .sidebar-panel__summary { display: flex; flex-wrap: wrap; gap: var(--space-2); }
-   151|    .sidebar-toolbar { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-4); align-items: end; }
-   152|    .sidebar-toolbar__filters { display: flex; flex-wrap: wrap; gap: var(--space-2); }
-   153|    .field { display: grid; gap: var(--space-2); color: var(--muted); font-size: var(--font-sm); min-width: min(100%, var(--field-min)); flex: 1 1 var(--field-min); }
-   154|    .field input, .field select { min-height: 46px; border-radius: var(--radius-sm); border: 1px solid var(--line); background: var(--surface-2); color: var(--text); padding: 0 var(--space-4); outline: none; transition: border-color var(--transition), box-shadow var(--transition), background var(--transition); width: 100%; }
-   155|    .field input:focus, .field select:focus { border-color: var(--chip-active-border); box-shadow: 0 0 0 3px var(--focus-ring); background: var(--surface-3); }
-   156|    .panel-state { padding: var(--space-5); border-radius: var(--radius); border: 1px solid var(--line); background: var(--surface-2); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-3); color: var(--muted); }
-   157|    .panel-state h3 { margin: 0; color: var(--text); }
-   158|    .panel-state p { margin: 0; }
-   159|    .panel-state.is-error { border-color: var(--danger-border); background: var(--danger-bg); }
-   160|    .panel-state.is-success { border-color: var(--success-border); background: var(--success-bg); }
-   161|    .state-inline { display: flex; align-items: center; gap: var(--space-2); }
-   162|    .sidebar-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-4); }
-   163|    .worker-card { min-width: 0; padding: var(--space-5); border-radius: var(--radius); border: 1px solid var(--line); background: linear-gradient(180deg, var(--card-bg), var(--card-bg-soft)); box-shadow: var(--shadow-soft); display: grid; gap: var(--space-3); transition: transform var(--transition), border-color var(--transition), box-shadow var(--transition); }
-   164|    .worker-card:hover, .worker-card:focus-within { transform: translateY(-3px); border-color: var(--chip-active-border); box-shadow: var(--shadow); }
-   165|    .worker-card.is-selected { border-color: var(--chip-active-border); box-shadow: 0 0 0 1px var(--chip-active-border), var(--shadow); }
-   166|    .worker-card__head { display: flex; align-items: start; justify-content: space-between; gap: var(--space-3); }
-   167|    .worker-card__head h3 { margin: 0; font-size: var(--font-lg); word-break: break-word; }
-   168|    .worker-card__head p, .worker-card__hint { margin: var(--space-1) 0 0; color: var(--muted); }
-   169|    .heat-badge { flex: 0 0 auto; padding: var(--space-1) var(--space-3); border-radius: var(--radius-lg); border: 1px solid var(--heat-idle-border); background: var(--heat-idle-bg); color: var(--heat-idle-text); font-size: var(--font-xs); font-weight: 800; }
-   170|    .worker-card[data-heat="warm"] .heat-badge { border-color: var(--heat-warm-border); background: var(--heat-warm-bg); color: var(--heat-warm-text); }
-   171|    .worker-card[data-heat="hot"] .heat-badge { border-color: var(--heat-hot-border); background: var(--heat-hot-bg); color: var(--heat-hot-text); }
-   172|    .heatbar { height: 10px; overflow: hidden; border-radius: var(--radius-lg); background: var(--surface-3); }
-   173|    .heatbar i { display: block; width: var(--load-width); height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--brand), var(--brand-2)); transition: width var(--transition); }
-   174|    .load-label { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); margin: 0 0 var(--space-2); color: var(--muted); }
-   175|    .load-label strong { color: var(--text); }
-   176|    .worker-counts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-2); margin-bottom: 0; }
-   177|    .worker-counts div { min-width: 0; padding: var(--space-3); border-radius: var(--radius-sm); border: 1px solid var(--line); background: var(--surface-2); }
-   178|    .worker-counts dt { color: var(--muted); font-size: var(--font-xs); }
-   179|    .worker-counts dd { margin: var(--space-1) 0 0; font-weight: 800; }
-   180|    .worker-card__actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
-   181|    .worker-card__actions .btn { flex: 1 1 132px; }
-   182|
-   183|    .recommend-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-4); }
-   184|    .sidebar-grid, .recommend-grid { min-width: 0; }
-   185|    .recommend-card { min-width: 0; padding: var(--space-5); border-radius: var(--radius); border: 1px solid var(--line); background: var(--surface-2); }
-   186|    .recommend-card h3 { margin: 0 0 var(--space-2); }
-   187|    .recommend-card p { margin: 0; color: var(--muted); }
-   .recommend-card h3 { margin: 0 0 var(--space-2); }
-   .recommend-card p { margin: 0; color: var(--muted); }
+     <!DOCTYPE html>
+     <html lang="zh-CN">
+     <head>
+       <meta charset="UTF-8" />
+       <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+       <title>1034 跑团管理系统 | 空闲工人创意墙</title>
+       <link rel="stylesheet" href="styles-sztu.css" />
+      </head>
+     <body>
+       <header class="topbar">
+         <div class="topbar-brand">
+           <div class="brand-icon">SZ</div>
+           <div>
+             <div>1034 跑团管理系统</div>
+             <div class="motto">深技大设计系统 · 空闲工人创意墙</div>
+           </div>
+         </div>
+         <nav class="topbar-nav" aria-label="主导航">
+           <a href="#overview" class="active">总览</a>
+           <a href="#leaderboard">排行榜</a>
+           <a href="#activities">活动</a>
+           <a href="#actions">操作</a>
+         </nav>
+       </header>
 
-   /* 新人欢迎引导 */
-   .onboarding-shell { display: grid; gap: var(--space-6); }
-   .onboarding-hero { display: grid; gap: var(--space-5); }
-   .onboarding-hero__layout { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr); gap: var(--space-5); }
-   .onboarding-hero__footer { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); padding: var(--space-4); border-radius: var(--radius); border: 1px solid var(--line); background: var(--surface-2); }
-   .onboarding-hero__footer strong { display: block; margin-bottom: var(--space-1); color: var(--brand-ink); }
-   .onboarding-hero__footer p { margin: 0; color: var(--muted); }
-   .onboarding-steps, .onboarding-profile, .onboarding-checklist { padding: var(--space-5); }
-   .onboarding-profile__header h3, .onboarding-checklist .section-header h2 { margin: 0 0 var(--space-1); }
-   .onboarding-profile__header p { margin: 0; color: var(--muted); }
-   .onboarding-profile__list, .onboarding-checklist__body { display: grid; gap: var(--space-3); }
-   .onboarding-step-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-3); }
-   .onboarding-step { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-3); padding: var(--space-3); border-radius: var(--radius-sm); border: 1px solid var(--line); background: var(--surface-2); }
-   .onboarding-step.is-current { border-color: var(--chip-active-border); background: var(--chip-active-bg); }
-   .onboarding-step.is-done .onboarding-step__marker { background: var(--success-bg); border-color: var(--success-border); color: var(--success); }
-   .onboarding-step__marker { width: var(--timeline-node-size); height: var(--timeline-node-size); border-radius: 50%; display: grid; place-items: center; border: 1px solid var(--timeline-pending-border); background: var(--timeline-pending-bg); color: var(--muted); font-weight: 800; }
-   .onboarding-step strong, .onboarding-buddy strong { display: block; margin-bottom: var(--space-1); }
-   .onboarding-step p, .onboarding-buddy p, .onboarding-profile__header p { margin: 0; color: var(--muted); }
-   .onboarding-buddy { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-3); align-items: center; padding: var(--space-3); border-radius: var(--radius-sm); border: 1px solid var(--line); background: var(--surface-2); }
-   .onboarding-buddy__avatar { width: calc(var(--space-9) + var(--space-2)); height: calc(var(--space-9) + var(--space-2)); border-radius: 50%; display: grid; place-items: center; background: linear-gradient(135deg, var(--brand), var(--brand-2)); color: var(--ink); font-weight: 800; }
-   .onboarding-check { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding: var(--space-4); border-radius: var(--radius-sm); border: 1px solid var(--line); background: var(--surface-2); }
-   .onboarding-check__left { display: flex; align-items: center; gap: var(--space-3); min-width: 0; }
-   .onboarding-check__left input { width: 1.1rem; height: 1.1rem; accent-color: var(--brand); flex: 0 0 auto; }
-   .onboarding-check strong { display: block; margin-bottom: var(--space-1); }
-   .onboarding-check small { color: var(--muted); }
-   .onboarding-skeleton { height: calc(var(--space-8) * 2); border-radius: var(--radius); background: linear-gradient(90deg, var(--surface-2), var(--surface-3), var(--surface-2)); background-size: 200% 100%; animation: shimmer 1.5s ease-in-out infinite; }
-   .onboarding-shell--loading { gap: var(--space-4); }
+       <main class="main-content">
+         <section id="overview" class="card overview-panel">
+           <div class="section-heading">
+             <div>
+               <p class="badge badge--blue">SZTU 深技大设计系统</p>
+               <h1>空闲工人创意墙</h1>
+               <p class="section-note">统一的暗色科技风界面，展示成员状态、排行榜与近期活动。</p>
+             </div>
+             <div class="overview-actions">
+               <button class="btn btn--primary">新建创意</button>
+               <button class="btn btn--secondary">刷新数据</button>
+             </div>
+           </div>
 
-   @keyframes spin { to { transform: rotate(360deg); } }
-   @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+           <div class="bento-grid bento-grid--4">
+             <article class="stat-card">
+               <div class="stat-card__label">在线成员</div>
+               <div class="stat-card__value">24</div>
+               <div class="stat-card__delta up">较昨日 +3</div>
+             </article>
+             <article class="stat-card">
+               <div class="stat-card__label">待办创意</div>
+               <div class="stat-card__value">12</div>
+               <div class="stat-card__delta up">本周新增 5</div>
+             </article>
+             <article class="stat-card">
+               <div class="stat-card__label">活跃任务</div>
+               <div class="stat-card__value">08</div>
+               <div class="stat-card__delta down">较昨日 -1</div>
+             </article>
+             <article class="stat-card">
+               <div class="stat-card__label">完成率</div>
+               <div class="stat-card__value">86%</div>
+               <div class="stat-card__delta up">继续保持</div>
+             </article>
+           </div>
+         </section>
 
-   @media (max-width: 960px) {
-     .sidebar-hero, .sidebar-toolbar, .member-dashboard__layout, .onboarding-hero__layout { grid-template-columns: 1fr; }
-     .sidebar-grid, .recommend-grid, .member-dashboard__metrics, .member-dashboard__badge-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-     .member-dashboard-chart__bars { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-   }
+         <section id="leaderboard" class="card leaderboard-panel">
+           <div class="card-header">
+             <div>
+               <div class="card-title">成员排行榜</div>
+               <div class="card-subtitle">按贡献值展示本周表现</div>
+             </div>
+             <span class="badge">Top 10</span>
+           </div>
+           <div class="leaderboard">
+             <article class="leaderboard-item">
+               <div class="leaderboard-rank">01</div>
+               <div class="leaderboard-main">
+                 <div class="leaderboard-avatar">林</div>
+                 <div>
+                   <div class="leaderboard-name">林知夏</div>
+                   <div class="leaderboard-meta">贡献值 1290 · 连续 7 天在线</div>
+                 </div>
+               </div>
+               <div class="badge badge--blue">MVP</div>
+             </article>
+             <article class="leaderboard-item">
+               <div class="leaderboard-rank">02</div>
+               <div class="leaderboard-main">
+                 <div class="leaderboard-avatar">周</div>
+                 <div>
+                   <div class="leaderboard-name">周沐阳</div>
+                   <div class="leaderboard-meta">贡献值 1180 · 新增 4 个方案</div>
+                 </div>
+               </div>
+               <div class="badge">稳定输出</div>
+             </article>
+             <article class="leaderboard-item">
+               <div class="leaderboard-rank">03</div>
+               <div class="leaderboard-main">
+                 <div class="leaderboard-avatar">唐</div>
+                 <div>
+                   <div class="leaderboard-name">唐一帆</div>
+                   <div class="leaderboard-meta">贡献值 1125 · 协助 3 次排班</div>
+                 </div>
+               </div>
+               <div class="badge">协作达人</div>
+             </article>
+           </div>
+         </section>
 
-   @media (max-width: 720px) {
-     .shell { width: min(calc(100% - var(--space-5)), var(--max)); }
-     .sidebar-grid, .recommend-grid, .member-dashboard__metrics, .member-dashboard__badge-grid, .metric-grid, .worker-counts, .onboarding-hero__footer { grid-template-columns: 1fr; }
-     .sidebar-hero, .section, .member-dashboard__chart, .member-dashboard__badges, .onboarding-steps, .onboarding-profile, .onboarding-checklist { padding: var(--space-5); }
-     .onboarding-check, .worker-card__actions, .sidebar-hero__actions { flex-direction: column; }
-     .onboarding-check { align-items: stretch; }
-     .onboarding-check__left { align-items: flex-start; }
-   }
+         <section id="activities" class="activity-grid">
+           <article class="card activity-card">
+             <div class="card-header">
+               <div>
+                 <div class="card-title">今日活动</div>
+                 <div class="card-subtitle">沉浸式任务面板</div>
+               </div>
+               <span class="badge badge--blue">进行中</span>
+             </div>
+             <div class="empty-state" hidden>
+               <strong>暂无数据</strong>
+               <p>当前没有可展示的活动，请稍后刷新。</p>
+             </div>
+             <div class="loading-spinner" hidden></div>
+             <div class="activity-list">
+               <article class="activity-item">
+                 <div>
+                   <div class="activity-title">工人分组讨论</div>
+                   <div class="activity-meta">18:30 · 讨论下周跑团主题</div>
+                 </div>
+                 <span class="badge">已预约</span>
+               </article>
+               <article class="activity-item">
+                 <div>
+                   <div class="activity-title">创意提案评审</div>
+                   <div class="activity-meta">20:00 · 评审 6 份提案</div>
+                 </div>
+                 <span class="badge badge--blue">待开始</span>
+               </article>
+             </div>
+           </article>
 
-
-    /* 成员跑量排行榜 */
-   192|    .leaderboard-panel { display: grid; gap: var(--space-5); }
-   193|    .leaderboard-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-3); }
-   194|    .leaderboard-toggle { display: flex; flex-wrap: wrap; gap: var(--space-2); }
-   195|    .leaderboard-shell { display: grid; gap: var(--space-4); min-width: 0; }
-   196|    .leaderboard-state { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-3); padding: var(--space-5); border-radius: var(--radius); border: 1px solid var(--line); background: var(--surface-2); }
-   197|    .leaderboard-state h3, .leaderboard-empty h3, .leaderboard-card__name { margin: 0; color: var(--text); }
-   198|    .leaderboard-state p, .leaderboard-empty p, .leaderboard-card__meta p, .leaderboard-card__stats span { margin: 0; color: var(--muted); }
-   199|    .leaderboard-state.is-error { border-color: var(--danger-border); background: var(--danger-bg); }
-   200|    .leaderboard-podium { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-4); }
-   201|    .leaderboard-podium .leaderboard-card { min-height: 100%; }
-   202|    .leaderboard-list { display: grid; gap: var(--space-3); }
-   203|    .leaderboard-card { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: var(--space-4); align-items: center; padding: var(--space-5); border-radius: var(--radius); border: 1px solid var(--line); background: linear-gradient(180deg, var(--card-bg), var(--card-bg-soft)); box-shadow: var(--shadow-soft); min-width: 0; transition: transform var(--transition), border-color var(--transition), box-shadow var(--transition); }
-   204|    .leaderboard-card:hover { transform: translateY(-2px); border-color: var(--chip-active-border); box-shadow: var(--shadow); }
-   205|    .leaderboard-card.is-top-1 { border-color: var(--warning-border); background: linear-gradient(180deg, var(--warning-bg), var(--card-bg-soft)); }
-   206|    .leaderboard-card.is-top-2 { border-color: var(--line-strong); background: linear-gradient(180deg, var(--surface-3), var(--card-bg-soft)); }
-   207|    .leaderboard-card.is-top-3 { border-color: var(--danger-border); background: linear-gradient(180deg, var(--danger-bg), var(--card-bg-soft)); }
-   208|    .leaderboard-rank { width: calc(var(--space-9) + var(--space-2)); height: calc(var(--space-9) + var(--space-2)); border-radius: var(--radius-lg); display: grid; place-items: center; background: var(--surface-2); border: 1px solid var(--line); color: var(--brand-ink); font-weight: 800; }
-   209|    .leaderboard-avatar { width: calc(var(--space-9) + var(--space-4)); height: calc(var(--space-9) + var(--space-4)); border-radius: 50%; display: grid; place-items: center; background: linear-gradient(135deg, var(--brand), var(--brand-2)); color: var(--ink); font-weight: 800; box-shadow: var(--shadow-soft); flex: 0 0 auto; }
-   210|    .leaderboard-card__main { display: flex; align-items: center; gap: var(--space-3); min-width: 0; }
-   211|    .leaderboard-card__meta { display: grid; gap: var(--space-1); min-width: 0; }
-   212|    .leaderboard-card__name { font-size: var(--font-lg); word-break: break-word; }
-   213|    .leaderboard-card__badge { width: fit-content; padding: var(--space-1) var(--space-3); border-radius: var(--radius-lg); border: 1px solid var(--chip-active-border); background: var(--chip-active-bg); color: var(--brand-ink); font-size: var(--font-xs); font-weight: 700; }
-   214|    .leaderboard-card__stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-3); min-width: min(100%, 26rem); }
+           <article class="card activity-card">
+             <div class="card-header">
+               <div>
+                 <div class="card-title">快捷操作</div>
+                 <div class="card-subtitle">一键进入常用流程</div>
+               </div>
+             </div>
+             <div id="actions" class="action-row">
+               <button class="btn btn--primary">发布公告</button>
+               <button class="btn btn--secondary">导出名单</button>
+               <button class="btn btn--secondary" disabled>加载中</button>
+             </div>
+             <div class="panel-state">
+               <div>
+                 <h3>网络状态正常</h3>
+                 <p>页面可继续通过 fetch 调用 /api/v1/ 接口。</p>
+               </div>
+               <button class="btn btn--secondary">重试</button>
+             </div>
+           </article>
+         </section>
+       </main>
+     </body>
+     </html>
    215|    .leaderboard-card__stats strong { display: block; margin-top: var(--space-1); color: var(--text); }
    216|    .leaderboard-empty, .leaderboard-skeleton { min-height: 14rem; border-radius: var(--radius); border: 1px dashed var(--line-strong); background: var(--surface-2); display: grid; place-items: center; gap: var(--space-3); padding: var(--space-6); text-align: center; color: var(--muted); }
    217|    .leaderboard-skeleton { border-style: solid; background: linear-gradient(90deg, rgba(255,255,255,0.04), rgba(255,255,255,0.12), rgba(255,255,255,0.04)); background-size: 200% 100%; animation: shimmer 1.2s infinite; }

@@ -162,6 +162,11 @@ window.apiClient = (() => {
     return normalizeWorkerDirectory(payload);
   }
 
+  async function fetchTeamChallengeOverview({ login_verification = false } = {}) {
+    const payload = await fetchJson("/workspaces/team-challenge/overview", { login_verification });
+    return payload?.data || payload || {};
+  }
+
   async function dispatchCreativeIdea(idea, { login_verification = true } = {}) {
     return fetchJson("/workspaces/task-queue/dispatch", {
       login_verification,
@@ -217,47 +222,18 @@ window.apiClient = (() => {
     fetchJson,
     fetchTaskQueue,
     fetchWorkerDirectory,
+    fetchTeamChallengeOverview,
     fetchMemberList,
-    fetchCheckinStats,
-    fetchLeaderboard,
     fetchOnboardingBuddies,
     fetchOnboardingChecklist,
     updateOnboardingChecklistItem,
     completeOnboarding,
     fetchOnboardingOverview,
-    dispatchCreativeIdea,
     normalizeTaskQueue,
     normalizeWorkerDirectory,
+    normalizeAchievements,
+    normalizeCheckinStats,
     normalizeMemberList,
-    normalizeLeaderboardList,
+    dispatchCreativeIdea,
   };
 })();
-
-export async function fetchMembersByRole(role) {
-  const query = role ? `?role=${encodeURIComponent(role)}` : "";
-  return fetchJson(`/api/v1/members${query}`);
-}
-export async function fetchActivityPhotos(activityId) {
-  return fetchJson(`/api/v1/activities/${activityId}/photos`);
-}
-export async function uploadActivityPhotos(activityId, files) {
-  const formData = new FormData();
-  files.forEach((file) => {
-    formData.append('photos', file);
-  });
-  const response = await fetch(`/api/v1/activities/${activityId}/photos`, {
-    method: 'POST',
-    body: formData,
-  });
-  if (!response.ok) {
-    let message = '上传失败，请稍后重试';
-    try {
-      const data = await response.json();
-      message = data?.message || data?.detail || message;
-    } catch (error) {
-      message = message;
-    }
-    throw new Error(message);
-  }
-  return response.json();
-}
