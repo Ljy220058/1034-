@@ -69,22 +69,39 @@ window.apiClient = (() => {
       updatedAt: item.updated_at || item.updatedAt || item.updated || "",
     }));
   }
-    80|    80|    80|  function normalizeWorkerDirectory(payload) {
-    const list = Array.isArray(payload) ? payload : payload?.data || payload?.workers || payload?.items || [];
-    return list.map((item, index) => ({
-      id: item.id || item.profile || item.name || `worker-${index + 1}`,
-      name: item.name || item.profile || item.id || `worker-${index + 1}`,
-      title: item.title || item.label || item.role || "空闲 worker",
-      type: item.type || item.category || item.group || "前端协作",
-      status: item.status || item.state || "idle",
-      load: Number(item.load ?? item.score ?? 0),
-      capability: Array.isArray(item.capability) ? item.capability : (Array.isArray(item.skills) ? item.skills : []),
-      bio: item.bio || item.description || "",
-    }));
-  }
-    94|    94|    94|  function normalizeMemberList(payload) {
-    const list = Array.isArray(payload) ? payload : payload?.data || payload?.members || payload?.items || [];
-    return list.map((item, index) => ({
+    function normalizeWorkerDirectory(payload) {
+      const list = Array.isArray(payload) ? payload : payload?.data || payload?.workers || payload?.items || [];
+      return list.map((item, index) => ({
+        id: item.id || item.profile || item.name || `worker-${index + 1}`,
+        name: item.name || item.profile || item.id || `worker-${index + 1}`,
+        title: item.title || item.label || item.role || "空闲 worker",
+        type: item.type || item.category || item.group || "前端协作",
+        status: item.status || item.state || "idle",
+        load: Number(item.load ?? item.score ?? 0),
+        capability: Array.isArray(item.capability) ? item.capability : (Array.isArray(item.skills) ? item.skills : []),
+        bio: item.bio || item.description || "",
+      }));
+    }
+
+    function normalizeCheckinStats(payload) {
+      const rows = Array.isArray(payload) ? payload : payload?.data || payload?.days || payload?.items || [];
+      const summary = payload?.summary || payload?.stats || payload?.meta || {};
+      return {
+        summary: {
+          currentStreak: Number(summary.currentStreak ?? summary.current_streak ?? summary.streak ?? 0),
+          maxStreak: Number(summary.maxStreak ?? summary.max_streak ?? summary.longestStreak ?? 0),
+          monthDays: Number(summary.monthDays ?? summary.month_days ?? summary.thisMonthDays ?? 0),
+        },
+        rows: rows.map((item, index) => ({
+          date: item.date || item.day || item.record_date || item.checkin_date || `day-${index + 1}`,
+          count: Number(item.count ?? item.times ?? item.checkins ?? item.value ?? 0),
+          memberId: item.member_id || item.memberId || item.user_id || item.userId || '',
+        })),
+      };
+    }
+
+    function normalizeMemberList(payload) {
+
       id: item.id || item.member_id || `member-${index + 1}`,
       name: item.name || item.nickname || item.username || `成员 ${index + 1}`,
       phone: item.phone || item.mobile || item.tel || "",
@@ -127,6 +144,7 @@ window.apiClient = (() => {
     fetchTaskQueue,
     fetchWorkerDirectory,
     fetchMemberList,
+    fetchCheckinStats,
     fetchLeaderboard,
     dispatchCreativeIdea,
     normalizeTaskQueue,
