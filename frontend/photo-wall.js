@@ -6,6 +6,13 @@ const PHOTO_WALL_DEFAULTS = {
   subtitle: '上传活动现场照片，沉淀每一次相聚的精彩瞬间',
 };
 
+const ACTIVITY_FILTERS = [
+  { value: 'all', label: '全部活动' },
+  { value: 'training', label: '训练日' },
+  { value: 'race', label: '比赛日' },
+  { value: 'social', label: '团建日' },
+];
+
 export function createPhotoWall(container, options = {}) {
   if (!container) {
     return null;
@@ -23,6 +30,8 @@ export function createPhotoWall(container, options = {}) {
     uploadError: '',
     uploadLoading: false,
     previewIndex: -1,
+    filter: 'all',
+    likedIds: new Set(),
   };
 
   const refs = {};
@@ -90,6 +99,20 @@ export function createPhotoWall(container, options = {}) {
           <button class="btn photo-wall__refresh" type="button" data-action="retry">刷新照片</button>
         </header>
 
+        <nav class="photo-wall__filters" aria-label="活动筛选">
+          ${ACTIVITY_FILTERS.map((filter) => `
+            <button
+              class="photo-wall__filter${filter.value === state.filter ? ' is-active' : ''}"
+              type="button"
+              data-action="filter-photo"
+              data-filter="${filter.value}"
+              aria-pressed="${filter.value === state.filter ? 'true' : 'false'}"
+            >
+              ${filter.label}
+            </button>
+          `).join('')}
+        </nav>
+
         <section class="photo-wall__upload" aria-label="上传照片">
           <label class="photo-wall__dropzone" data-dropzone>
             <input class="photo-wall__input" type="file" accept="image/*" multiple data-file-input>
@@ -131,6 +154,7 @@ export function createPhotoWall(container, options = {}) {
     refs.lightbox = container.querySelector('[data-lightbox]');
     refs.previewImage = container.querySelector('[data-preview-image]');
     refs.previewCaption = container.querySelector('[data-preview-caption]');
+    refs.filterButtons = container.querySelectorAll('[data-filter]');
 
     renderUploadStatus();
     renderPhotoGrid();
@@ -138,7 +162,8 @@ export function createPhotoWall(container, options = {}) {
 
   function bindPhotoWallEvents() {
     container.addEventListener('click', (event) => {
-      const action = event.target.closest('[data-action]')?.dataset.action;
+      const actionTarget = event.target.closest('[data-action]');
+      const action = actionTarget?.dataset.action;
       if (!action) {
         return;
       }
@@ -149,6 +174,16 @@ export function createPhotoWall(container, options = {}) {
 
       if (action === 'retry') {
         loadPhotos();
+      }
+
+      if (action === 'filter-photo') {
+        state.filter = actionTarget.dataset.filter || 'all';
+        renderPhotoGrid();
+      }
+
+      if (action === 'toggle-like') {
+        const photoId = actionTarget.dataset.photoId;
+        toggleLike(photoId);
       }
 
       if (action === 'close-preview') {
@@ -208,10 +243,19 @@ export function createPhotoWall(container, options = {}) {
     refs.uploadStatus.textContent = '支持 JPG、PNG、WEBP 等常见图片格式';
   }
 
+  function getVisiblePhotos() {
+    if (state.filter === 'all') {
+      return state.photos;
+    }
+    return state.photos.filter((photo) => photo.activityType === state.filter);
+  }
+
   function renderPhotoGrid() {
     if (!refs.grid) {
       return;
     }
+
+    const visiblePhotos = getVisiblePhotos();
 
     if (state.loading) {
       refs.grid.innerHTML = `
@@ -219,6 +263,9 @@ export function createPhotoWall(container, options = {}) {
           <span class="spinner" aria-hidden="true"></span>
           <p>照片加载中…</p>
         </article>
+        <article class="photo-card photo-card--skeleton" aria-hidden="true"></article>
+        <article class="photo-card photo-card--skeleton" aria-hidden="true"></article>
+        <article class="photo-card photo-card--skeleton" aria-hidden="true"></article>
       `;
       return;
     }
@@ -233,7 +280,7 @@ export function createPhotoWall(container, options = {}) {
       return;
     }
 
-    if (!state.photos.length) {
+    if (!visiblePhotos.length) {
       refs.grid.innerHTML = `
         <article class="photo-wall__state photo-wall__state--empty">
           <p>暂无数据</p>
@@ -243,14 +290,32 @@ export function createPhotoWall(container, options = {}) {
       return;
     }
 
-    refs.grid.innerHTML = state.photos.map((photo, index) => `
-      <button class="photo-card" type="button" data-photo-index="${index}">
-        <img class="photo-card__image" src="${photo.url}" alt="${photo.alt}">
-        <span class="photo-card__overlay">
-          <strong>${photo.title}</strong>
-          <small>${photo.caption}</small>
-        </span>
-      </button>
+    refs.grid.innerHTML = visiblePhotos.map((photo, index) => `
+      <article class="photo-card photo-card--${photo.tone}" style="--photo-span: ${photo.span};">
+        <button class="photo-card__media" type="button" data-photo-index="${index}" aria-label="查看 ${photo.title}">
+          <img class="photo-card__image" src="${photo.url}" alt="${photo.alt}">
+          <span class="photo-card__shine" aria-hidden="true"></span>
+        </button>
+        <div class="photo-card__body">
+          <header class="photo-card__head">
+            <div>
+              <h3>${photo.title}</h3>
+              <p>${photo.caption}</p>
+            </div>
+            <span class="photo-card__tag">${photo.tag}</span>
+          </header>
+          <div class="photo-card__meta">
+            <span>${photo.activityLabel}</span>
+            <span>${photo.timeLabel}</span>
+          </div>
+          <div class="photo-card__actions">
+            <button class="btn btn--ghost photo-card__like${state.likedIds.has(photo.id) ? ' is-liked' : ''}" type="button" data-action="toggle-like" data-photo-id="${photo.id}">
+              ${state.likedIds.has(photo.id) ? '已点赞' : '点赞'}
+            </button>
+            <button class="btn photo-card__view" type="button" data-photo-index="${index}">放大查看</button>
+          </div>
+        </div>
+      </article>
     `).join('');
 
     refs.grid.querySelectorAll('[data-photo-index]').forEach((button) => {
@@ -258,6 +323,18 @@ export function createPhotoWall(container, options = {}) {
         openPreview(Number(button.dataset.photoIndex || 0));
       });
     });
+  }
+
+  function toggleLike(photoId) {
+    if (!photoId) {
+      return;
+    }
+    if (state.likedIds.has(photoId)) {
+      state.likedIds.delete(photoId);
+    } else {
+      state.likedIds.add(photoId);
+    }
+    renderPhotoGrid();
   }
 
   function openPreview(index) {
@@ -291,11 +368,21 @@ export function createPhotoWall(container, options = {}) {
 
 function normalizePhotos(payload) {
   const list = Array.isArray(payload) ? payload : payload?.items || payload?.data || [];
+  const activityMap = ['training', 'race', 'social'];
+  const toneMap = ['calm', 'warm', 'cool'];
+  const tagMap = ['精选', '热门', '打卡'];
+
   return list.map((item, index) => ({
     id: item.id || `photo-${index + 1}`,
     url: item.url || item.image_url || item.thumbnail_url || '',
     title: item.title || item.name || `活动照片 ${index + 1}`,
     caption: item.caption || item.description || '点击查看大图',
     alt: item.alt || item.title || item.name || `活动照片 ${index + 1}`,
+    activityType: item.activity_type || activityMap[index % activityMap.length],
+    activityLabel: item.activity_label || ['训练日', '比赛日', '团建日'][index % 3],
+    timeLabel: item.taken_at || item.created_at || item.time || '刚刚发布',
+    tag: item.tag || tagMap[index % tagMap.length],
+    tone: item.tone || toneMap[index % toneMap.length],
+    span: Number(item.span || (index % 3 === 0 ? 2 : 1)),
   })).filter((item) => item.url);
 }
