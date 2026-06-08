@@ -73,7 +73,7 @@ function createMemberDashboard(root = document) {
       `;
     }
     if (elements.metrics) {
-      elements.metrics.innerHTML = Array.from({ length: 3 }).map(() => `
+      elements.metrics.innerHTML = Array.from({ length: 4 }).map(() => `
         <article class="member-dashboard-stat is-skeleton" aria-hidden="true">
           <span></span>
           <strong></strong>
@@ -107,6 +107,7 @@ function createMemberDashboard(root = document) {
       { label: '已获徽章', value: `${data.earnedBadges.length} 枚` },
       { label: '待解锁', value: `${data.lockedBadges.length} 枚` },
       { label: '近 6 个月总跑量', value: data.totalLastSixMonthsLabel },
+      { label: '连续打卡', value: data.streakLabel },
     ]);
 
     if (elements.state) {
@@ -116,7 +117,7 @@ function createMemberDashboard(root = document) {
           <h3>数据已更新</h3>
           <p>本月跑量 ${escapeHtml(data.monthlyDistanceLabel)}，平均配速 ${escapeHtml(data.averagePaceLabel)}。</p>
         </div>
-        <button class="btn btn-secondary" type="button" data-member-dashboard-refresh>重新拉取</button>
+        <button class="btn btn--secondary" type="button" data-member-dashboard-refresh>重新拉取</button>
       `;
       elements.state.querySelector('[data-member-dashboard-refresh]')?.addEventListener('click', refreshMemberDashboard);
     }
@@ -132,7 +133,8 @@ function createMemberDashboard(root = document) {
     }
 
     if (elements.chart) {
-      const maxValue = Math.max(...data.monthlyTrend.map((item) => item.distance), 1);
+      const trendItems = data.monthlyTrend.slice(-MEMBER_DASHBOARD_MONTH_COUNT);
+      const maxValue = Math.max(...trendItems.map((item) => item.distance), 1);
       elements.chart.innerHTML = `
         <header class="member-dashboard-chart__header">
           <div>
@@ -142,7 +144,7 @@ function createMemberDashboard(root = document) {
           <span class="summary-chip">最高 ${escapeHtml(formatDistance(maxValue))}</span>
         </header>
         <div class="member-dashboard-chart__bars" role="img" aria-label="近 6 个月跑量柱状图">
-          ${data.monthlyTrend.map((item) => {
+          ${trendItems.map((item) => {
             const height = `${Math.max((item.distance / maxValue) * 100, item.distance > 0 ? 16 : 8)}%`;
             return `
               <article class="member-dashboard-bar-card">
@@ -163,7 +165,7 @@ function createMemberDashboard(root = document) {
       elements.badges.innerHTML = badgeCards.map((badge) => badge.isEmpty
         ? `
           <article class="member-badge-empty panel-empty">
-            <h3>暂无数据</h3>
+            <h3>${MEMBER_DASHBOARD_EMPTY_TEXT}</h3>
             <p>当前成员还没有可展示的徽章记录，请稍后重试。</p>
           </article>
         `
@@ -193,7 +195,7 @@ function createMemberDashboard(root = document) {
           <h3>数据加载失败</h3>
           <p>${escapeHtml(message || '请稍后重试。')}</p>
         </div>
-        <button class="btn btn-secondary" type="button" data-member-dashboard-refresh>重试</button>
+        <button class="btn btn--secondary" type="button" data-member-dashboard-refresh>重试</button>
       `;
       elements.state.querySelector('[data-member-dashboard-refresh]')?.addEventListener('click', refreshMemberDashboard);
     }
@@ -211,6 +213,11 @@ function createMemberDashboard(root = document) {
         </article>
         <article class="member-dashboard-stat member-dashboard-stat--empty">
           <span>平均配速</span>
+          <strong>--</strong>
+          <small>等待重试</small>
+        </article>
+        <article class="member-dashboard-stat member-dashboard-stat--empty">
+          <span>连续打卡</span>
           <strong>--</strong>
           <small>等待重试</small>
         </article>
@@ -258,111 +265,135 @@ function createMemberDashboard(root = document) {
 function buildMemberDashboardView(achievementsPayload, leaderboardPayload) {
   const achievements = normalizeAchievementPayload(achievementsPayload);
   const leaderboard = normalizeLeaderboardPayload(leaderboardPayload);
-  const monthlyTrend = buildMonthlyTrend(leaderboard.monthlyTrend);
-  const totalDistance = leaderboard.totalDistance;
-  const monthlyDistance = leaderboard.monthlyDistance || (monthlyTrend.at(-1)?.distance || 0);
-  const averagePaceLabel = leaderboard.averagePace || achievements.averagePace || '暂无数据';
-  const metrics = [
-    { label: '总跑量', value: formatDistance(totalDistance), hint: '累计里程' },
-    { label: '本月跑量', value: formatDistance(monthlyDistance), hint: '本月累计' },
-    { label: '平均配速', value: averagePaceLabel, hint: '分钟 / 公里' },
-  ];
-
-  const earnedBadges = achievements.badges.filter((item) => item.earned);
-  const lockedBadges = achievements.badges.filter((item) => !item.earned);
+  const monthlyTrend = buildMonthlyTrend(achievements);
+  const totalDistance = monthlyTrend.reduce((sum, item) => sum + item.distance, 0);
+  const monthlyDistance = monthlyTrend.at(-1)?.distance ?? 0;
+  const averagePace = averageNumber(achievements.map((item) => item.paceMinutesPerKm).filter(Number.isFinite));
+  const streak = leaderboard.currentUser?.streakDays ?? achievements.reduce((max, item) => Math.max(max, item.streakDays ?? 0), 0);
 
   return {
-    metrics,
-    badges: achievements.badges,
-    earnedBadges,
-    lockedBadges,
+    metrics: [
+      { label: '总里程', value: formatDistance(totalDistance), hint: '近 6 个月累计' },
+      { label: '总活动', value: `${achievements.length} 次`, hint: '含跑步与训练课' },
+      { label: '平均配速', value: formatPace(averagePace), hint: '近 6 个月平均' },
+      { label: '连续打卡', value: `${streak} 天`, hint: '最长连续训练' },
+    ],
     monthlyTrend,
-    totalLastSixMonthsLabel: formatDistance(monthlyTrend.reduce((sum, item) => sum + item.distance, 0)),
-    totalDistanceLabel: formatDistance(totalDistance),
+    earnedBadges: achievements.filter((item) => item.earned).map((item) => ({
+      icon: item.icon,
+      statusText: item.statusText,
+      name: item.name,
+      description: item.description,
+      dateLabel: item.dateLabel,
+      earned: true,
+    })),
+    lockedBadges: achievements.filter((item) => !item.earned),
+    badges: achievements.length ? achievements.map((item) => ({
+      icon: item.icon,
+      statusText: item.statusText,
+      name: item.name,
+      description: item.description,
+      dateLabel: item.dateLabel,
+      progressPercent: item.progressPercent,
+      remainingText: item.remainingText,
+      earned: item.earned,
+    })) : [createEmptyBadgeView()],
+    totalLastSixMonthsLabel: formatDistance(totalDistance),
     monthlyDistanceLabel: formatDistance(monthlyDistance),
-    averagePaceLabel,
+    averagePaceLabel: formatPace(averagePace),
+    streakLabel: `${streak} 天`,
   };
 }
 
 function normalizeAchievementPayload(payload) {
-  const source = payload?.data || payload || {};
-  const badges = Array.isArray(source.badges) ? source.badges : Array.isArray(source.items) ? source.items : [];
-  return {
-    averagePace: source.average_pace || source.averagePace || source.avg_pace || '',
-    badges: badges.map((item, index) => {
-      const earned = Boolean(item.earned ?? item.unlocked ?? item.is_earned ?? item.obtained_at || item.earned_at);
-      const current = Number(item.current ?? item.progress_value ?? item.value ?? item.completed ?? 0);
-      const target = Number(item.target ?? item.goal ?? item.total ?? 0);
-      const progress = target > 0 ? Math.min(current / target, 1) : earned ? 1 : 0;
-      const remaining = Math.max(target - current, 0);
-      return {
-        id: item.id || item.badge_id || `badge-${index + 1}`,
-        name: item.name || item.title || `成就徽章 ${index + 1}`,
-        description: item.description || item.detail || '持续训练，解锁更多跑步成就。',
-        earned,
-        icon: item.icon || (earned ? '🏅' : '🎯'),
-        dateLabel: formatDate(item.obtained_at || item.earned_at || item.unlocked_at || ''),
-        statusText: earned ? '已获得' : '未获得',
-        progressPercent: `${Math.round(progress * 100)}%`,
-        remainingText: remaining > 0 ? `${formatDistance(remaining)} 或更多训练` : '等待同步进度',
-      };
-    }),
-  };
+  const items = Array.isArray(payload?.items) ? payload.items : Array.isArray(payload) ? payload : [];
+  return items.map((item, index) => ({
+    name: item.name || item.title || `成就 ${index + 1}`,
+    description: item.description || '暂无描述',
+    icon: item.icon || '🏅',
+    dateLabel: item.date || item.earnedAt || '待解锁',
+    earned: item.earned !== false,
+    statusText: item.earned === false ? '未获得' : '已获得',
+    progressPercent: clampPercent(item.progressPercent ?? item.progress ?? 0),
+    remainingText: item.remainingText || item.remaining || '0%',
+    distance: toNumber(item.distanceKm ?? item.distance ?? item.totalDistance ?? 0),
+    paceMinutesPerKm: toNumber(item.paceMinutesPerKm ?? item.pace ?? item.averagePace),
+    streakDays: toNumber(item.streakDays ?? item.streak),
+    month: item.month || item.monthLabel || inferMonthLabel(index),
+  }));
 }
 
 function normalizeLeaderboardPayload(payload) {
-  const source = payload?.data || payload || {};
-  const list = Array.isArray(source.list) ? source.list : Array.isArray(source.items) ? source.items : Array.isArray(source.rankings) ? source.rankings : [];
-  const summary = source.summary || source.stats || {};
-  const first = list[0] || {};
   return {
-    totalDistance: Number(summary.total_distance ?? summary.totalDistance ?? first.total_distance ?? first.totalDistance ?? first.distance ?? 0),
-    monthlyDistance: Number(summary.month_distance ?? summary.monthDistance ?? first.month_distance ?? first.monthDistance ?? first.monthly_distance ?? 0),
-    averagePace: first.average_pace || first.avg_pace || first.pace || summary.average_pace || summary.avg_pace || '',
-    monthlyTrend: Array.isArray(source.monthly_trend)
-      ? source.monthly_trend
-      : Array.isArray(source.monthlyTrend)
-        ? source.monthlyTrend
-        : Array.isArray(first.monthly_trend)
-          ? first.monthly_trend
-          : Array.isArray(first.monthlyTrend)
-            ? first.monthlyTrend
-            : [],
+    currentUser: payload?.currentUser || payload?.member || null,
   };
 }
 
 function buildMonthlyTrend(items) {
-  const normalized = Array.isArray(items) ? items.slice(-MEMBER_DASHBOARD_MONTH_COUNT).map((item, index) => ({
-    label: item.label || item.month || item.name || `M${index + 1}`,
-    distance: Number(item.distance ?? item.value ?? item.total ?? 0),
-  })) : [];
+  const monthlyMap = new Map();
+  items.forEach((item) => {
+    const label = item.month || inferMonthLabel(monthlyMap.size);
+    const existing = monthlyMap.get(label) || { label, distance: 0 };
+    existing.distance += item.distance || 0;
+    monthlyMap.set(label, existing);
+  });
 
-  if (normalized.length) {
-    return normalized;
+  const ordered = Array.from(monthlyMap.values());
+  while (ordered.length < MEMBER_DASHBOARD_MONTH_COUNT) {
+    ordered.unshift({ label: inferMonthLabel(ordered.length), distance: 0 });
   }
-
-  return Array.from({ length: MEMBER_DASHBOARD_MONTH_COUNT }).map((_, index) => ({
-    label: `近${MEMBER_DASHBOARD_MONTH_COUNT - index}月`,
-    distance: 0,
-  }));
+  return ordered.slice(-MEMBER_DASHBOARD_MONTH_COUNT);
 }
 
 function createEmptyBadgeView() {
-  return { isEmpty: true };
+  return {
+    isEmpty: true,
+  };
 }
 
 function formatDistance(value) {
-  const numeric = Number(value || 0);
-  if (!numeric) return '0 km';
-  const rounded = numeric >= 100 ? Math.round(numeric) : Math.round(numeric * 10) / 10;
-  return `${rounded} km`;
+  const number = Number.isFinite(value) ? value : 0;
+  return `${number.toFixed(number >= 100 ? 0 : 1)} km`;
 }
 
-function formatDate(value) {
-  if (!value) return '待同步';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return String(value);
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+function formatPace(value) {
+  const number = Number.isFinite(value) && value > 0 ? value : 0;
+  if (!number) return '暂无';
+  const minutes = Math.floor(number);
+  const seconds = Math.round((number - minutes) * 60);
+  return `${minutes}'${String(seconds).padStart(2, '0')}" / km`;
+}
+
+function averageNumber(values) {
+  if (!values.length) return 0;
+  return values.reduce((sum, value) => sum + value, 0) / values.length;
+}
+
+function toNumber(value) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : 0;
+}
+
+function clampPercent(value) {
+  const number = Math.min(100, Math.max(0, Number(value) || 0));
+  return `${number}%`;
+}
+
+function inferMonthLabel(index) {
+  const month = String((index % 12) + 1).padStart(2, '0');
+  return `2025-${month}`;
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
 }
 
 window.createMemberDashboard = createMemberDashboard;
+document.addEventListener('DOMContentLoaded', () => {
+  window.createMemberDashboard();
+});
