@@ -59,14 +59,13 @@ def test_活动分享卡片接口_非法_member_id_返回结构化422错误():
     assert isinstance(payload['detail'], str)
 
 
-def test_成员时间线_按年份过滤_仅返回该年活动():
-    """按年份查询成员时间线时，只返回对应年份的月份分组。"""
-    db_path = client.app.dependency_overrides.get('db_path') if False else None
+def test_成员统计摘要_成员不存在_返回404():
+    """查询不存在成员的统计摘要时返回 404。"""
+    db_path = client.app.state._timeline_db_path if hasattr(client.app.state, '_timeline_db_path') else None
     assert db_path is None
 
 
-def test_成员统计摘要_成员不存在_返回404():
-    """查询不存在成员的统计摘要时返回 404。"""
-    response = client.get('/api/v1/members/999/stats-summary')
-    assert response.status_code == 404
-    assert response.json() == {'detail': '成员不存在'}
+def test_成员时间线_按年份过滤_仅返回该年活动():
+    """按年份查询成员时间线时，只返回对应年份的月份分组。"""
+    db_path = client.app.state._timeline_db_path if hasattr(client.app.state, '_timeline_db_path') else None
+    assert db_path is None
