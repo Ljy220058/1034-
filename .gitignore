@@ -4,6 +4,12 @@ backend/*.db
 *.sqlite
 *.sqlite3
 
+# Local environment / secrets
+.env
+.env.*
+!.env.example
+.venv/
+
 # Python cache
 __pycache__/
 **/__pycache__/

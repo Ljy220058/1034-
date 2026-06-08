@@ -10,11 +10,7 @@ from backend.repository import create_task_queue_worker
 
 
 def _init_test_db(tmp_path: Path) -> None:
-    """初始化任务看板测试数据库。
-
-    Args:
-        tmp_path: pytest 临时目录。
-    """
+    """初始化任务看板测试数据库。"""
     database.init_db(tmp_path / 'running_club.db')
 
 
@@ -59,8 +55,8 @@ def test_idle_worker_recommendations_returns_api_response_shape(tmp_path: Path) 
 
 
 def test_idle_worker_summary_rejects_empty_workspace_path() -> None:
-    """空 workspace_path 应触发结构化校验错误。"""
+    """空 workspace_path 应触发结构化错误。"""
     response = TestClient(app).get('/api/v1/workers/idle-summary', params={'workspace_path': ' '})
 
     assert response.status_code == 422
-    assert response.json() == {'detail': 'String should have at least 1 character'}
+    assert response.json() == {'detail': 'workspace_path 不能为空'}

@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, HTTPException, Query
 
 from ..models import ApiResponse
 from ..worker_board import build_worker_board
@@ -39,7 +39,10 @@ _DEFAULT_WORKSPACE_PATH = '/root/autodl-tmp/projects/hermes-swarm-lab'
 
 def _normalize_workspace_path(workspace_path: str) -> str:
     """标准化工作区路径。"""
-    return str(Path(workspace_path).expanduser().resolve())
+    stripped = workspace_path.strip()
+    if not stripped:
+        raise ValueError('workspace_path 不能为空')
+    return str(Path(stripped).expanduser().resolve())
 
 
 def _idle_workers(board: dict[str, Any]) -> list[dict[str, Any]]:
@@ -118,7 +121,10 @@ def _build_summary_payload(workspace_path: str) -> dict[str, Any]:
 @router.get('/workers/idle-summary', response_model=ApiResponse)
 def read_idle_worker_summary(workspace_path: str = Query(default=_DEFAULT_WORKSPACE_PATH, min_length=1, max_length=500)) -> ApiResponse:
     """获取空闲 worker 聚合摘要。"""
-    payload = _build_summary_payload(workspace_path)
+    try:
+        payload = _build_summary_payload(workspace_path)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
     return ApiResponse(data=payload, message='已生成空闲 worker 摘要')
 
 
@@ -127,7 +133,10 @@ def read_idle_worker_recommendations(
     workspace_path: str = Query(default=_DEFAULT_WORKSPACE_PATH, min_length=1, max_length=500),
 ) -> ApiResponse:
     """返回空闲 worker 可执行推荐。"""
-    payload = _build_summary_payload(workspace_path)
+    try:
+        payload = _build_summary_payload(workspace_path)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
     data = {
         'workspace_path': payload['workspace_path'],
         'summary': payload['summary'],

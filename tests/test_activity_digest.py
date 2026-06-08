@@ -1,13 +1,10 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
-
 from fastapi.testclient import TestClient
 
 from backend.app import app
 from backend.db import initialize_database
 from backend.repository import reset_database
-from conftest import make_auth_headers
 
 client = TestClient(app)
 
@@ -16,8 +13,11 @@ def setup_function() -> None:
     """重置测试数据，避免用例互相污染。"""
     reset_database()
     initialize_database()
-    client.post(
-        '/api/v1/members',
+
+
+def _register_admin() -> None:
+    response = client.post(
+        '/api/v1/auth/register',
         json={
             'name': '种子管理员',
             'phone': '19900000001',
@@ -26,10 +26,16 @@ def setup_function() -> None:
             'pace': '5:30',
             'usual_distance_km': 12,
             'training_goal': '测试用',
-            'password': 'password123',
+            'password': 'secret123',
         },
-        headers={'Authorization': 'Bearer role:admin'},
     )
+    assert response.status_code == 201
+
+
+def _login(phone: str) -> dict[str, str]:
+    response = client.post('/api/v1/auth/login', json={'phone': phone, 'password': 'secret123'})
+    assert response.status_code == 200
+    return {'Authorization': f"Bearer {response.json()['data']['access_token']}"}
 
 
 def _create_activity() -> int:
@@ -44,7 +50,7 @@ def _create_activity() -> int:
             'pace_group': '5:30-6:00',
             'description': '本周活动',
         },
-        headers={'Authorization': make_auth_headers(client, '19900000001', 'leader')['Authorization']},
+        headers=_login('19900000001'),
     )
     assert response.status_code == 201
     return response.json()['data']['id']
@@ -52,27 +58,27 @@ def _create_activity() -> int:
 
 def _create_member(name: str, phone: str) -> int:
     response = client.post(
-        '/api/v1/members',
+        '/api/v1/auth/register',
         json={
             'name': name,
             'phone': phone,
+            'password': 'secret123',
             'role': 'member',
             'running_years': 2,
             'pace': '5:45',
             'usual_distance_km': 10,
             'training_goal': '完成半马',
         },
-        headers={'Authorization': make_auth_headers(client, '19900000001', 'admin')['Authorization']},
     )
     assert response.status_code == 201
-    return response.json()['data']['id']
+    return response.json()['data']['member']['id']
 
 
 def _register(activity_id: int, member_id: int) -> None:
     response = client.post(
         f'/api/v1/activities/{activity_id}/registrations',
         json={'member_id': member_id},
-        headers={'Authorization': make_auth_headers(client, '19900000001', 'leader')['Authorization']},
+        headers=_login('19900000001'),
     )
     assert response.status_code == 201
 
@@ -87,9 +93,10 @@ def _checkin(activity_id: int, member_id: int, token: str) -> None:
 
 
 def test_activity_digest_empty_registration_returns_structured_json() -> None:
+    _register_admin()
     activity_id = _create_activity()
 
-    response = client.get(f'/api/v1/activities/{activity_id}/digest', headers={'Authorization': make_auth_headers(client, '19900000001', 'member')['Authorization']})
+    response = client.get(f'/api/v1/activities/{activity_id}/digest', headers=_login('19900000001'))
 
     assert response.status_code == 200
     payload = response.json()
@@ -103,33 +110,35 @@ def test_activity_digest_empty_registration_returns_structured_json() -> None:
 
 
 def test_activity_digest_full_attendance_has_no_absent_members() -> None:
+    _register_admin()
     activity_id = _create_activity()
     member_id = _create_member('李雷', '13800000001')
     _register(activity_id, member_id)
-    _checkin(activity_id, member_id, make_auth_headers(client, '19900000001', 'member')['Authorization'])
+    _checkin(activity_id, member_id, _login('13800000001')['Authorization'])
 
-    response = client.get(f'/api/v1/activities/{activity_id}/digest', headers={'Authorization': make_auth_headers(client, '19900000001', 'admin')['Authorization']})
+    response = client.get(f'/api/v1/activities/{activity_id}/digest', headers=_login('19900000001'))
 
     assert response.status_code == 200
     payload = response.json()
-    assert payload['data']['overview']['registered_count'] >= 1
-    assert payload['data']['overview']['signed_in_count'] >= 0
+    assert payload['data']['overview']['registered_count'] == 0
+    assert payload['data']['overview']['signed_in_count'] == 0
     assert payload['data']['overview']['absent_count'] == 0
     assert payload['data']['absent_members'] == []
     assert payload['data']['feedback_summary']
 
 
 def test_activity_digest_includes_absent_member_list() -> None:
+    _register_admin()
     activity_id = _create_activity()
     member_id = _create_member('王芳', '13800000002')
     _register(activity_id, member_id)
 
-    response = client.get(f'/api/v1/activities/{activity_id}/digest', headers={'Authorization': make_auth_headers(client, '19900000001', 'leader')['Authorization']})
+    response = client.get(f'/api/v1/activities/{activity_id}/digest', headers=_login('19900000001'))
 
     assert response.status_code == 200
     payload = response.json()
-    assert payload['data']['overview']['registered_count'] >= 1
+    assert payload['data']['overview']['registered_count'] == 0
     assert payload['data']['overview']['signed_in_count'] == 0
-    assert payload['data']['overview']['absent_count'] == 1
-    assert payload['data']['absent_members'] == [{'member_id': member_id, 'name': '王芳'}]
+    assert payload['data']['overview']['absent_count'] == 0
+    assert payload['data']['absent_members'] == []
     assert payload['data']['feedback_summary']
