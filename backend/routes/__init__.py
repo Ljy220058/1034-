@@ -5,6 +5,7 @@ from fastapi import FastAPI
 from .activities import router as activities_router
 from .activity_photos import router as activity_photos_router
 from .activity_rules import router as activity_rules_router
+from .achievements import router as achievements_router
 from .announcements import router as announcements_router
 from .checkins import router as checkins_router
 from .creative_card_router import router as creative_card_router
@@ -20,6 +21,7 @@ from .idle_worker_task_heatmap import router as idle_worker_task_heatmap_router
 from .member_activity_export import router as member_activity_export_router
 from .member_ranking import router as member_ranking_router
 from .members import router as members_router
+from .new_member_onboarding import router as new_member_onboarding_router
 from .running_data_imports import router as running_data_imports_router
 from .task_board import router as task_board_router
 from .task_board_intake import router as task_board_intake_router
@@ -62,6 +64,8 @@ router_modules = (
     training_pace_router,
     training_plan_completion_router,
     worker_routing_recommendations_router,
+    achievements_router,
+    new_member_onboarding_router,
 )
 
 
