@@ -1,568 +1,501 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>1034 Running Club | 前端页面框架</title>
-  <style>
-    :root {
-      color-scheme: dark;
-      --bg: #08111d;
-      --bg-elevated: rgba(15, 23, 42, 0.82);
-      --bg-elevated-2: rgba(30, 41, 59, 0.76);
-      --text: #ecf4ff;
-      --muted: #9fb2ca;
-      --line: rgba(148, 163, 184, 0.18);
-      --line-strong: rgba(148, 163, 184, 0.28);
-      --brand: #38bdf8;
-      --brand-2: #22c55e;
-      --accent: #f59e0b;
-      --danger: #fb7185;
-      --shadow: 0 20px 55px rgba(2, 6, 23, 0.42);
-      --radius: 20px;
-      --max: 1160px;
-    }
-
-    * { box-sizing: border-box; }
-    html {
-      scroll-behavior: smooth;
-      scroll-padding-top: 92px;
-    }
-    body {
-      margin: 0;
-      min-height: 100vh;
-      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background:
-        radial-gradient(circle at top left, rgba(56, 189, 248, 0.16), transparent 30%),
-        radial-gradient(circle at top right, rgba(34, 197, 94, 0.12), transparent 24%),
-        linear-gradient(180deg, #08111d 0%, #0b1728 52%, #101827 100%);
-      color: var(--text);
-      line-height: 1.55;
-      text-rendering: optimizeLegibility;
-      -webkit-font-smoothing: antialiased;
-    }
-
-    a { color: inherit; text-decoration: none; }
-    img { max-width: 100%; display: block; }
-    h1, h2, h3, h4, p { margin-top: 0; }
-
-    .shell {
-      width: min(calc(100% - 24px), var(--max));
-      margin: 0 auto;
-    }
-
-    .topbar {
-      position: sticky;
-      top: 0;
-      z-index: 20;
-      backdrop-filter: blur(16px);
-      background: rgba(8, 17, 29, 0.78);
-      border-bottom: 1px solid var(--line);
-    }
-
-    .topbar-inner {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-      padding: 14px 0;
-    }
-
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      min-width: 0;
-    }
-
-    .brand-mark {
-      width: 42px;
-      height: 42px;
-      border-radius: 14px;
-      background: linear-gradient(135deg, var(--brand), var(--brand-2));
-      display: grid;
-      place-items: center;
-      font-weight: 800;
-      color: #04111f;
-      box-shadow: var(--shadow);
-      flex: 0 0 auto;
-    }
-
-    .brand h1 {
-      font-size: 1rem;
-      margin: 0;
-      line-height: 1.2;
-    }
-
-    .brand p {
-      margin: 2px 0 0;
-      font-size: 0.84rem;
-      color: var(--muted);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      max-width: 52vw;
-    }
-
-    .nav {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: flex-end;
-      gap: 8px;
-    }
-
-    .nav a,
-    .btn,
-    .card,
-    .mini-item,
-    .feature,
-    .event,
-    .stat,
-    .status,
-    .pill,
-    .tag,
-    .checkin-item {
-      transition:
-        transform 0.18s ease,
-        background 0.18s ease,
-        border-color 0.18s ease,
-        box-shadow 0.18s ease,
-        opacity 0.18s ease;
-    }
-
-    .nav a {
-      min-height: 40px;
-      display: inline-flex;
-      align-items: center;
-      padding: 0 13px;
-      border-radius: 999px;
-      border: 1px solid transparent;
-      color: var(--muted);
-      font-size: 0.92rem;
-    }
-
-    .nav a:hover,
-    .nav a:focus-visible {
-      color: var(--text);
-      border-color: var(--line);
-      background: rgba(255, 255, 255, 0.05);
-      outline: none;
-      transform: translateY(-1px);
-    }
-
-    main { padding: 22px 0 34px; }
-
-    .card {
-      border: 1px solid var(--line);
-      border-radius: var(--radius);
-      background: linear-gradient(180deg, rgba(15, 23, 42, 0.92), rgba(15, 23, 42, 0.76));
-      box-shadow: var(--shadow);
-    }
-
-    .card:hover,
-    .feature:hover,
-    .event:hover,
-    .stat:hover,
-    .mini-item:hover,
-    .checkin-item:hover {
-      transform: translateY(-2px);
-      border-color: rgba(56, 189, 248, 0.26);
-      box-shadow: 0 22px 58px rgba(2, 6, 23, 0.48);
-    }
-
-    .hero-grid {
-      display: grid;
-      grid-template-columns: 1.25fr 0.75fr;
-      gap: 18px;
-      align-items: stretch;
-    }
-
-    .hero-main {
-      padding: 28px;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .hero-main::after {
-      content: "";
-      position: absolute;
-      right: -54px;
-      bottom: -70px;
-      width: 210px;
-      height: 210px;
-      border-radius: 50%;
-      background: radial-gradient(circle, rgba(56, 189, 248, 0.18), transparent 66%);
-      pointer-events: none;
-    }
-
-    .eyebrow {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 14px;
-      padding: 8px 12px;
-      border-radius: 999px;
-      border: 1px solid rgba(56, 189, 248, 0.24);
-      background: rgba(56, 189, 248, 0.12);
-      color: #bdeaff;
-      font-size: 0.84rem;
-      font-weight: 700;
-    }
-
-    .hero-main h2 {
-      margin-bottom: 12px;
-      max-width: 11ch;
-      font-size: clamp(2.15rem, 6vw, 4.2rem);
-      line-height: 1.02;
-      letter-spacing: -0.055em;
-    }
-
-    .hero-main p {
-      margin-bottom: 0;
-      max-width: 58ch;
-      color: var(--muted);
-      font-size: 1rem;
-    }
-
-    .actions {
-      display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
-      margin-top: 24px;
-    }
-
-    .btn {
-      min-height: 46px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      border-radius: 14px;
-      border: 1px solid transparent;
-      padding: 0 16px;
-      cursor: pointer;
-      font-weight: 700;
-    }
-
-    .btn:hover,
-    .btn:focus-visible {
-      transform: translateY(-1px);
-      outline: none;
-    }
-    .btn-primary { background: linear-gradient(135deg, var(--brand), var(--brand-2)); color: #04111f; }
-    .btn-secondary { background: rgba(255, 255, 255, 0.04); color: var(--text); border-color: var(--line); }
-
-    .hero-side {
-      display: grid;
-      gap: 18px;
-    }
-
-    .metric {
-      padding: 22px;
-    }
-
-    .metric strong {
-      display: block;
-      font-size: 2rem;
-      line-height: 1;
-      margin-bottom: 6px;
-    }
-
-    .metric span { color: var(--muted); font-size: 0.95rem; }
-
-    .mini-list {
-      display: grid;
-      gap: 12px;
-      padding: 18px;
-    }
-
-    .mini-item {
-      display: flex;
-      justify-content: space-between;
-      gap: 12px;
-      padding: 14px 14px;
-      border-radius: 16px;
-      background: rgba(255,255,255,0.03);
-      border: 1px solid rgba(255,255,255,0.04);
-    }
-
-    .mini-item b { display: block; font-size: 0.95rem; }
-    .mini-item small { color: var(--muted); }
-    .pill {
-      align-self: flex-start;
-      padding: 6px 10px;
-      border-radius: 999px;
-      background: rgba(245, 158, 11, 0.12);
-      color: #ffd58d;
-      font-size: 0.82rem;
-      white-space: nowrap;
-    }
-
-    section { padding: 18px 0; }
-
-    .section-head {
-      display: flex;
-      align-items: end;
-      justify-content: space-between;
-      gap: 14px;
-      margin-bottom: 14px;
-    }
-
-    .section-head h3 {
-      margin: 0;
-      font-size: 1.25rem;
-      letter-spacing: -0.025em;
-    }
-
-    .section-head p { margin: 0; color: var(--muted); font-size: 0.95rem; }
-
-    .grid-3 {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 16px;
-    }
-
-    .feature {
-      padding: 20px;
-    }
-
-    .feature .icon {
-      width: 44px;
-      height: 44px;
-      border-radius: 14px;
-      display: grid;
-      place-items: center;
-      background: rgba(56, 189, 248, 0.12);
-      border: 1px solid rgba(56, 189, 248, 0.22);
-      margin-bottom: 14px;
-      font-size: 1.2rem;
-    }
-
-    .feature h4 { margin: 0 0 8px; font-size: 1.02rem; }
-    .feature p { margin: 0; color: var(--muted); font-size: 0.94rem; }
-
-    .schedule {
-      display: grid;
-      gap: 12px;
-    }
-
-    .event {
-      display: grid;
-      grid-template-columns: auto 1fr auto;
-      gap: 14px;
-      padding: 16px 18px;
-      align-items: center;
-      background: rgba(255,255,255,0.03);
-      border: 1px solid rgba(255,255,255,0.05);
-      border-radius: 18px;
-    }
-
-    .time {
-      font-weight: 700;
-      color: #d8f3ff;
-      white-space: nowrap;
-    }
-
-    .event h4 { margin: 0 0 4px; font-size: 1rem; }
-    .event p { margin: 0; color: var(--muted); font-size: 0.92rem; }
-
-    .event .tag {
-      justify-self: end;
-      padding: 7px 10px;
-      border-radius: 999px;
-      background: rgba(34, 197, 94, 0.12);
-      color: #b8f7cc;
-      font-size: 0.82rem;
-    }
-
-    .footer {
-      padding: 24px 0 32px;
-      color: var(--muted);
-      font-size: 0.92rem;
-      text-align: center;
-    }
-
-    @media (max-width: 920px) {
-      .hero-grid,
-      .grid-3 { grid-template-columns: 1fr; }
-      .topbar-inner { flex-direction: column; align-items: flex-start; }
-      .nav { justify-content: flex-start; }
-    }
-
-    @media (max-width: 640px) {
-      .shell { width: min(calc(100% - 18px), var(--max)); }
-      .hero-main,
-      .metric,
-      .mini-list,
-      .feature,
-      .event { padding-left: 16px; padding-right: 16px; }
-      .hero-main { padding-top: 22px; }
-      .hero h2 { max-width: none; }
-      .section-head { flex-direction: column; align-items: flex-start; }
-      .event { grid-template-columns: 1fr; gap: 8px; }
-      .event .tag { justify-self: start; }
-    }
-  </style>
-</head>
-<body>
-  <header class="topbar">
-    <div class="shell topbar-inner">
-      <div class="brand" aria-label="1034 Running Club">
-        <div class="brand-mark">1034</div>
-        <div>
-          <h1>1034 Running Club</h1>
-          <p>轻量级社团管理前端框架</p>
-        </div>
-      </div>
-      <nav class="nav" aria-label="主导航">
-        <a href="#features">功能</a>
-        <a href="#schedule">日程</a>
-        <a href="#stats">数据</a>
-        <a href="#contact">联系</a>
-      </nav>
-    </div>
-  </header>
-
-  <main class="shell">
-    <section class="hero">
-      <div class="hero-grid">
-        <article class="card hero-main">
-          <div class="eyebrow">🏃‍♀️ 移动端优先 · Vanilla HTML/CSS/JS</div>
-          <h2>把跑团的报名、活动、签到与数据看板放在一个清晰入口里</h2>
-          <p>这是一个适合 1034 Running Club 的前端页面框架：布局清晰、响应式、易扩展。后续可直接接入活动发布、报名管理、签到验证、公告通知等业务模块。</p>
-          <div class="actions">
-            <a class="btn btn-primary" href="#schedule">查看本周活动</a>
-            <a class="btn btn-secondary" href="#features">浏览功能模块</a>
-          </div>
-        </article>
-
-        <aside class="hero-side">
-          <div class="card metric">
-            <strong>4</strong>
-            <span>核心模块：成员、活动、数据、通知</span>
-          </div>
-          <div class="card mini-list">
-            <div class="mini-item">
-              <div>
-                <b>报名人数</b>
-                <small>周三夜跑</small>
-              </div>
-              <div class="pill">28 人</div>
-            </div>
-            <div class="mini-item">
-              <div>
-                <b>签到状态</b>
-                <small>周末长距离</small>
-              </div>
-              <div class="pill">待开始</div>
-            </div>
-          </div>
-        </aside>
-      </div>
-    </section>
-
-    <section id="features">
-      <div class="section-head">
-        <div>
-          <h3>功能结构</h3>
-          <p>用卡片和模块化区域呈现社团系统能力。</p>
-        </div>
-      </div>
-      <div class="grid-3">
-        <article class="card feature">
-          <div class="icon">👤</div>
-          <h4>成员管理</h4>
-          <p>展示注册、个人资料、角色分级等入口，方便后续接入身份与权限逻辑。</p>
-        </article>
-        <article class="card feature">
-          <div class="icon">📅</div>
-          <h4>活动管理</h4>
-          <p>围绕发布、报名、取消、签到和回顾组织流程，符合跑团真实使用场景。</p>
-        </article>
-        <article class="card feature">
-          <div class="icon">📊</div>
-          <h4>数据统计</h4>
-          <p>预留里程、出勤率、活跃度、趋势图等位置，后续可逐步接入图表组件。</p>
-        </article>
-      </div>
-    </section>
-
-    <section id="schedule">
-      <div class="section-head">
-        <div>
-          <h3>本周活动</h3>
-          <p>适合做首页信息展示，也可替换为真实活动列表。</p>
-        </div>
-      </div>
-      <div class="schedule">
-        <article class="card event">
-          <div class="time">周三 19:30</div>
-          <div>
-            <h4>轻松夜跑 · 5K 配速分组</h4>
-            <p>起点：人民公园南门 · 适合新成员参与</p>
-          </div>
-          <div class="tag">报名中</div>
-        </article>
-        <article class="card event">
-          <div class="time">周六 07:00</div>
-          <div>
-            <h4>周末长距离 · 12K 训练</h4>
-            <p>起点：滨河跑道 · 集合后统一热身</p>
-          </div>
-          <div class="tag">待发布</div>
-        </article>
-        <article class="card event">
-          <div class="time">周日 20:00</div>
-          <div>
-            <h4>活动回顾 · 照片与感言</h4>
-            <p>整理当周精彩瞬间，为社团沉淀内容资产</p>
-          </div>
-          <div class="tag">预告</div>
-        </article>
-      </div>
-    </section>
-
-    <section id="stats">
-      <div class="section-head">
-        <div>
-          <h3>数据概览</h3>
-          <p>为统计面板保留适合手机查看的布局。</p>
-        </div>
-      </div>
-      <div class="grid-3">
-        <article class="card feature">
-          <div class="icon">🏁</div>
-          <h4>总里程</h4>
-          <p>用大号数字展示累计跑量，适合做首页 KPI。</p>
-        </article>
-        <article class="card feature">
-          <div class="icon">🔥</div>
-          <h4>活跃度</h4>
-          <p>突出近期出勤与连续参与情况，增强成员参与感。</p>
-        </article>
-        <article class="card feature">
-          <div class="icon">📈</div>
-          <h4>趋势变化</h4>
-          <p>为月度/季度报告预留图表空间，便于后续接入数据可视化。</p>
-        </article>
-      </div>
-    </section>
-
-    <section id="contact">
-      <div class="card hero-main" style="padding: 24px;">
-        <div class="section-head" style="margin-bottom: 0;">
-          <div>
-            <h3>下一步可以直接接入</h3>
-            <p>活动列表、报名表单、签到弹窗、公告流和个人中心。</p>
-          </div>
-          <a class="btn btn-primary" href="#top">回到顶部</a>
-        </div>
-      </div>
-    </section>
-  </main>
-
-  <footer class="footer shell">
-    1034 Running Club · Clean responsive front-end frame built with vanilla HTML/CSS/JS
-  </footer>
-</body>
-</html>
+     1|<!DOCTYPE html>
+     2|<html lang="zh-CN">
+     3|<head>
+     4|  <meta charset="UTF-8" />
+     5|  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+     6|  <title>1034 跑团管理系统 | 前端任务看板</title>
+     7|  <style>
+     8|    :root {
+     9|      color-scheme: dark;
+    10|      --bg: #08111d;
+    11|      --bg-elevated: rgba(15, 23, 42, 0.88);
+    12|      --bg-elevated-2: rgba(30, 41, 59, 0.76);
+    13|      --text: #ecf4ff;
+    14|      --muted: #9fb2ca;
+    15|      --line: rgba(148, 163, 184, 0.18);
+    16|      --line-strong: rgba(148, 163, 184, 0.28);
+    17|      --brand: #38bdf8;
+    18|      --brand-2: #22c55e;
+    19|      --accent: #f59e0b;
+    20|      --danger: #fb7185;
+    21|      --shadow: 0 20px 55px rgba(2, 6, 23, 0.42);
+    22|      --radius: 20px;
+    23|      --max: 1160px;
+    24|    }
+    25|
+    26|    * { box-sizing: border-box; }
+    27|    html {
+    28|      scroll-behavior: smooth;
+    29|      scroll-padding-top: 92px;
+    30|    }
+    31|    body {
+    32|      margin: 0;
+    33|      min-height: 100vh;
+    34|      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    35|      background:
+    36|        radial-gradient(circle at top left, rgba(56, 189, 248, 0.16), transparent 30%),
+    37|        radial-gradient(circle at top right, rgba(34, 197, 94, 0.12), transparent 24%),
+    38|        linear-gradient(180deg, #08111d 0%, #0b1728 52%, #101827 100%);
+    39|      color: var(--text);
+    40|      line-height: 1.55;
+    41|      text-rendering: optimizeLegibility;
+    42|      -webkit-font-smoothing: antialiased;
+    43|    }
+    44|
+    45|    a { color: inherit; text-decoration: none; }
+    46|    img { max-width: 100%; display: block; }
+    47|    h1, h2, h3, h4, p { margin-top: 0; }
+    48|
+    49|    .shell {
+    50|      width: min(calc(100% - 24px), var(--max));
+    51|      margin: 0 auto;
+    52|    }
+    53|
+    54|    .topbar {
+    55|      position: sticky;
+    56|      top: 0;
+    57|      z-index: 20;
+    58|      backdrop-filter: blur(16px);
+    59|      background: rgba(8, 17, 29, 0.78);
+    60|      border-bottom: 1px solid var(--line);
+    61|    }
+    62|
+    63|    .topbar-inner {
+    64|      display: flex;
+    65|      align-items: center;
+    66|      justify-content: space-between;
+    67|      gap: 16px;
+    68|      padding: 14px 0;
+    69|    }
+    70|
+    71|    .brand {
+    72|      display: flex;
+    73|      align-items: center;
+    74|      gap: 12px;
+    75|      min-width: 0;
+    76|    }
+    77|
+    78|    .brand-mark {
+    79|      width: 42px;
+    80|      height: 42px;
+    81|      border-radius: 14px;
+    82|      background: linear-gradient(135deg, var(--brand), var(--brand-2));
+    83|      display: grid;
+    84|      place-items: center;
+    85|      font-weight: 800;
+    86|      color: #04111f;
+    87|      box-shadow: var(--shadow);
+    88|      flex: 0 0 auto;
+    89|    }
+    90|
+    91|    .brand h1 {
+    92|      font-size: 1rem;
+    93|      margin: 0;
+    94|      line-height: 1.2;
+    95|    }
+    96|
+    97|    .brand p {
+    98|      margin: 2px 0 0;
+    99|      font-size: 0.84rem;
+   100|      color: var(--muted);
+   101|      white-space: nowrap;
+   102|      overflow: hidden;
+   103|      text-overflow: ellipsis;
+   104|      max-width: 52vw;
+   105|    }
+   106|
+   107|    .nav {
+   108|      display: flex;
+   109|      flex-wrap: wrap;
+   110|      justify-content: flex-end;
+   111|      gap: 8px;
+   112|    }
+   113|
+   114|    .nav a,
+   115|    .btn,
+   116|    .card,
+   117|    .mini-item,
+   118|    .feature,
+   119|    .event,
+   120|    .stat,
+   121|    .status,
+   122|    .pill,
+   123|    .tag,
+   124|    .checkin-item {
+   125|      transition:
+   126|        transform 0.18s ease,
+   127|        background 0.18s ease,
+   128|        border-color 0.18s ease,
+   129|        box-shadow 0.18s ease,
+   130|        opacity 0.18s ease;
+   131|    }
+   132|
+   133|    .nav a {
+   134|      min-height: 40px;
+   135|      display: inline-flex;
+   136|      align-items: center;
+   137|      padding: 0 13px;
+   138|      border-radius: 999px;
+   139|      border: 1px solid transparent;
+   140|      color: var(--muted);
+   141|      font-size: 0.92rem;
+   142|    }
+   143|
+   144|    .nav a:hover,
+   145|    .nav a:focus-visible {
+   146|      color: var(--text);
+   147|      border-color: var(--line);
+   148|      background: rgba(255, 255, 255, 0.05);
+   149|      outline: none;
+   150|      transform: translateY(-1px);
+   151|    }
+   152|
+   153|    main { padding: 22px 0 34px; }
+   154|
+   155|    .card {
+   156|      border: 1px solid var(--line);
+   157|      border-radius: var(--radius);
+   158|      background: linear-gradient(180deg, rgba(15, 23, 42, 0.92), rgba(15, 23, 42, 0.76));
+   159|      box-shadow: var(--shadow);
+   160|    }
+   161|
+   162|    .card:hover,
+   163|    .feature:hover,
+   164|    .event:hover,
+   165|    .stat:hover,
+   166|    .mini-item:hover,
+   167|    .checkin-item:hover {
+   168|      transform: translateY(-2px);
+   169|      border-color: rgba(56, 189, 248, 0.26);
+   170|      box-shadow: 0 22px 58px rgba(2, 6, 23, 0.48);
+   171|    }
+   172|
+   173|    .hero-grid {
+   174|      display: grid;
+   175|      grid-template-columns: 1.25fr 0.75fr;
+   176|      gap: 18px;
+   177|      align-items: stretch;
+   178|    }
+   179|
+   180|    .hero-main {
+   181|      padding: 28px;
+   182|      position: relative;
+   183|      overflow: hidden;
+   184|    }
+   185|
+   186|    .hero-main::after {
+   187|      content: "";
+   188|      position: absolute;
+   189|      right: -54px;
+   190|      bottom: -70px;
+   191|      width: 210px;
+   192|      height: 210px;
+   193|      border-radius: 50%;
+   194|      background: radial-gradient(circle, rgba(56, 189, 248, 0.18), transparent 66%);
+   195|      pointer-events: none;
+   196|    }
+   197|
+   198|    .eyebrow {
+   199|      display: inline-flex;
+   200|      align-items: center;
+   201|      gap: 8px;
+   202|      margin-bottom: 14px;
+   203|      padding: 8px 12px;
+   204|      border-radius: 999px;
+   205|      border: 1px solid rgba(56, 189, 248, 0.24);
+   206|      background: rgba(56, 189, 248, 0.12);
+   207|      color: #bdeaff;
+   208|      font-size: 0.84rem;
+   209|      font-weight: 700;
+   210|    }
+   211|
+   212|    .hero-main h2 {
+   213|      margin-bottom: 12px;
+   214|      max-width: 11ch;
+   215|      font-size: clamp(2.15rem, 6vw, 4.2rem);
+   216|      line-height: 1.02;
+   217|      letter-spacing: -0.055em;
+   218|    }
+   219|
+   220|    .hero-main p {
+   221|      margin-bottom: 0;
+   222|      max-width: 58ch;
+   223|      color: var(--muted);
+   224|      font-size: 1rem;
+   225|    }
+   226|
+   227|    .actions {
+   228|      display: flex;
+   229|      gap: 12px;
+   230|      flex-wrap: wrap;
+   231|      margin-top: 24px;
+   232|    }
+   233|
+   234|    .btn {
+   235|      min-height: 46px;
+   236|      display: inline-flex;
+   237|      align-items: center;
+   238|      justify-content: center;
+   239|      gap: 8px;
+   240|      border-radius: 14px;
+   241|      border: 1px solid transparent;
+   242|      padding: 0 16px;
+   243|      cursor: pointer;
+   244|      font-weight: 700;
+   245|    }
+   246|
+   247|    .btn:hover,
+   248|    .btn:focus-visible {
+   249|      transform: translateY(-1px);
+   250|      outline: none;
+   251|    }
+   252|    .btn-primary { background: linear-gradient(135deg, var(--brand), var(--brand-2)); color: #04111f; }
+   253|    .btn-secondary { background: rgba(255, 255, 255, 0.04); color: var(--text); border-color: var(--line); }
+   254|
+   255|    .hero-side {
+   256|      display: grid;
+   257|      gap: 18px;
+   258|    }
+   259|
+   260|    .metric {
+   261|      padding: 22px;
+   262|    }
+   263|
+   264|    .metric strong {
+   265|      display: block;
+   266|      font-size: 2rem;
+   267|      line-height: 1;
+   268|      margin-bottom: 6px;
+   269|    }
+   270|
+   271|    .metric span { color: var(--muted); font-size: 0.95rem; }
+   272|
+   273|    .mini-list {
+   274|      display: grid;
+   275|      gap: 12px;
+   276|      padding: 18px;
+   277|    }
+   278|
+   279|    .mini-item {
+   280|      display: flex;
+   281|      justify-content: space-between;
+   282|      gap: 12px;
+   283|      padding: 14px 14px;
+   284|      border-radius: 16px;
+   285|      background: rgba(255,255,255,0.03);
+   286|      border: 1px solid rgba(255,255,255,0.04);
+   287|    }
+   288|
+   289|    .mini-item b { display: block; font-size: 0.95rem; }
+   290|    .mini-item small { color: var(--muted); }
+   291|    .pill {
+   292|      align-self: flex-start;
+   293|      padding: 6px 10px;
+   294|      border-radius: 999px;
+   295|      background: rgba(245, 158, 11, 0.12);
+   296|      color: #ffd58d;
+   297|      font-size: 0.82rem;
+   298|      white-space: nowrap;
+   299|    }
+   300|
+   301|    section { padding: 18px 0; }
+   302|
+   303|    .section-head {
+   304|      display: flex;
+   305|      align-items: end;
+   306|      justify-content: space-between;
+   307|      gap: 14px;
+   308|      margin-bottom: 14px;
+   309|    }
+   310|
+   311|    .section-head h3 {
+   312|      margin: 0;
+   313|      font-size: 1.25rem;
+   314|      letter-spacing: -0.025em;
+   315|    }
+   316|
+   317|    .section-head p { margin: 0; color: var(--muted); font-size: 0.95rem; }
+   318|
+   319|    .grid-3 {
+   320|      display: grid;
+   321|      grid-template-columns: repeat(3, minmax(0, 1fr));
+   322|      gap: 16px;
+   323|    }
+   324|
+   325|    .feature {
+   326|      padding: 20px;
+   327|    }
+   328|
+   329|    .feature .icon {
+   330|      width: 44px;
+   331|      height: 44px;
+   332|      border-radius: 14px;
+   333|      display: grid;
+   334|      place-items: center;
+   335|      background: rgba(56, 189, 248, 0.12);
+   336|      border: 1px solid rgba(56, 189, 248, 0.22);
+   337|      margin-bottom: 14px;
+   338|      font-size: 1.2rem;
+   339|    }
+   340|
+   341|    .feature h4 { margin: 0 0 8px; font-size: 1.02rem; }
+   342|    .feature p { margin: 0; color: var(--muted); font-size: 0.94rem; }
+   343|
+   344|    .schedule {
+   345|      display: grid;
+   346|      gap: 12px;
+   347|    }
+   348|
+   349|    .event {
+   350|      display: grid;
+   351|      grid-template-columns: auto 1fr auto;
+   352|      gap: 14px;
+   353|      padding: 16px 18px;
+   354|      align-items: center;
+   355|      background: rgba(255,255,255,0.03);
+   356|      border: 1px solid rgba(255,255,255,0.05);
+   357|      border-radius: 18px;
+   358|    }
+   359|
+   360|    .time {
+   361|      font-weight: 700;
+   362|      color: #d8f3ff;
+   363|      white-space: nowrap;
+   364|    }
+   365|
+   366|    .event h4 { margin: 0 0 4px; font-size: 1rem; }
+   367|    .event p { margin: 0; color: var(--muted); font-size: 0.92rem; }
+   368|
+   369|    .event .tag {
+   370|      justify-self: end;
+   371|      padding: 7px 10px;
+   372|      border-radius: 999px;
+   373|      background: rgba(34, 197, 94, 0.12);
+   374|      color: #b8f7cc;
+   375|      font-size: 0.82rem;
+   376|    }
+   377|
+   378|    .footer {
+   379|      padding: 24px 0 32px;
+   380|      color: var(--muted);
+   381|      font-size: 0.92rem;
+   382|      text-align: center;
+   383|    }
+   384|
+   385|    @media (max-width: 920px) {
+   386|      .hero-grid,
+   387|      .grid-3 { grid-template-columns: 1fr; }
+   388|      .topbar-inner { flex-direction: column; align-items: flex-start; }
+   389|      .nav { justify-content: flex-start; }
+   390|    }
+   391|
+   392|    @media (max-width: 640px) {
+   393|      .shell { width: min(calc(100% - 18px), var(--max)); }
+   394|      .hero-main,
+   395|      .metric,
+   396|      .mini-list,
+   397|      .feature,
+   398|      .event { padding-left: 16px; padding-right: 16px; }
+   399|      .hero-main { padding-top: 22px; }
+   400|      .hero h2 { max-width: none; }
+   401|      .section-head { flex-direction: column; align-items: flex-start; }
+   402|      .event { grid-template-columns: 1fr; gap: 8px; }
+   403|      .event .tag { justify-self: start; }
+   404|    }
+   405|  </style>
+   406|</head>
+   407|<body>
+   408|  <header class="topbar">
+   409|    <div class="shell topbar-inner">
+   410|      <div class="brand" aria-label="1034 跑团管理系统">
+   411|        <div class="brand-mark">1034</div>
+   412|        <div>
+   413|          <h1>1034 跑团管理系统</h1>
+   414|          <p>轻量级社团管理前端框架</p>
+   415|        </div>
+   416|      </div>
+   417|      <nav class="nav" aria-label="主导航">
+   418|        <a href="#features">功能</a>
+   419|        <a href="#schedule">日程</a>
+   420|        <a href="#stats">数据</a>
+   421|        <a href="#contact">联系</a>
+   422|      </nav>
+   423|    </div>
+   424|  </header>
+   425|
+   426|  <main class="shell">
+   427|    <section class="hero">
+   428|      <div class="hero-grid">
+   429|        <article class="card hero-main">
+   430|          <div class="eyebrow">🏃‍♀️ 移动端优先 · Vanilla HTML/CSS/JS</div>
+   431|          <h2>把跑团的报名、活动、签到与数据看板放在一个清晰入口里</h2>
+   432|          <p>这是一个适合 1034 跑团管理系统 的空闲任务推荐：布局清晰、响应式、易扩展。后续可直接接入活动发布、报名管理、签到验证、公告通知等业务模块。</p>
+   433|          <div class="actions">
+   434|            <a class="btn btn-primary" href="#schedule">查看本周活动</a>
+   435|            <a class="btn btn-secondary" href="#features">浏览功能模块</a>
+   436|          </div>
+   437|        </article>
+   438|
+   439|        <aside class="hero-side">
+   440|          <div class="card metric">
+   441|            <strong>4</strong>
+   442|            <span>核心模块：成员、活动、数据、通知</span>
+   443|          </div>
+   444|          <div class="card mini-list">
+   445|            <div class="mini-item">
+   446|              <div>
+   447|                <b>报名人数</b>
+   448|                <small>周三夜跑</small>
+   449|              </div>
+   450|              <div class="pill">28 人</div>
+   451|            </div>
+   452|            <div class="mini-item">
+   453|              <div>
+   454|                <b>签到状态</b>
+   455|                <small>周末长距离</small>
+   456|              </div>
+   457|              <div class="pill">待开始</div>
+   458|            </div>
+   459|          </div>
+   460|        </aside>
+   461|      </div>
+   462|    </section>
+   463|
+   464|    <section id="features">
+   465|      <div class="section-head">
+   466|        <div>
+   467|          <h3>功能结构</h3>
+   468|          <p>用卡片和模块化区域呈现社团系统能力。</p>
+   469|        </div>
+   470|      </div>
+   471|      <div class="grid-3">
+   472|        <article class="card feature">
+   473|          <div class="icon">👤</div>
+   474|          <h4>成员管理</h4>
+   475|          <p>展示注册、个人资料、角色分级等入口，方便后续接入身份与权限逻辑。</p>
+   476|        </article>
+   477|        <article class="card feature">
+   478|          <div class="icon">📅</div>
+   479|          <h4>活动管理</h4>
+   480|          <p>围绕发布、报名、取消、签到和回顾组织流程，符合跑团真实使用场景。</p>
+   481|        </article>
+   482|        <article class="card feature">
+   483|          <div class="icon">📊</div>
+   484|          <h4>数据统计</h4>
+   485|          <p>预留里程、出勤率、活跃度、趋势图等位置，后续可逐步接入图表组件。</p>
+   486|        </article>
+   487|      </div>
+   488|    </section>
+   489|
+   490|    <section id="schedule">
+   491|      <div class="section-head">
+   492|        <div>
+   493|          <h3>本周活动</h3>
+   494|          <p>适合做首页信息展示，也可替换为真实活动列表。</p>
+   495|        </div>
+   496|      </div>
+   497|      <div class="schedule">
+   498|        <article class="card event">
+   499|          <div class="time">周三 19:30</div>
+   500|          <div>
+   501|

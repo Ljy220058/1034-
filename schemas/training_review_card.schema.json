@@ -1,0 +1,125 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/schemas/training_review_card.schema.json",
+  "title": "训练完成智能复盘卡片数据契约",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_version",
+    "training_id",
+    "member_id",
+    "plan_goal",
+    "actual_distance_km",
+    "duration_seconds",
+    "average_pace_seconds_per_km",
+    "completion_rate",
+    "completion_status",
+    "anomaly_tags",
+    "recommendation_text",
+    "data_quality",
+    "generated_at"
+  ],
+  "properties": {
+    "contract_version": {
+      "type": "string",
+      "const": "training_review_card.v1"
+    },
+    "training_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120
+    },
+    "member_id": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "plan_goal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["goal_text", "target_distance_km", "target_pace_seconds_per_km", "source"],
+      "properties": {
+        "goal_text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "target_distance_km": {
+          "type": ["number", "null"],
+          "exclusiveMinimum": 0
+        },
+        "target_pace_seconds_per_km": {
+          "type": ["integer", "null"],
+          "minimum": 1
+        },
+        "source": {
+          "type": "string",
+          "enum": ["activity", "training_template", "member_profile", "fallback"]
+        }
+      }
+    },
+    "actual_distance_km": {
+      "type": ["number", "null"],
+      "minimum": 0
+    },
+    "duration_seconds": {
+      "type": ["integer", "null"],
+      "minimum": 0
+    },
+    "average_pace_seconds_per_km": {
+      "type": ["integer", "null"],
+      "minimum": 1
+    },
+    "completion_rate": {
+      "type": ["number", "null"],
+      "minimum": 0
+    },
+    "completion_status": {
+      "type": "string",
+      "enum": ["completed", "partial", "not_completed", "unknown"]
+    },
+    "anomaly_tags": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 40
+      }
+    },
+    "recommendation_text": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1000
+    },
+    "data_quality": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["gps_status", "distance_source", "pace_source", "degraded", "degrade_reason"],
+      "properties": {
+        "gps_status": {
+          "type": "string",
+          "enum": ["available", "missing", "empty", "not_required", "unknown"]
+        },
+        "distance_source": {
+          "type": "string",
+          "enum": ["gps_track", "import_file", "manual", "activity_plan", "unknown"]
+        },
+        "pace_source": {
+          "type": "string",
+          "enum": ["duration_and_distance", "import_file", "manual", "unknown"]
+        },
+        "degraded": {
+          "type": "boolean"
+        },
+        "degrade_reason": {
+          "type": ["string", "null"],
+          "maxLength": 500
+        }
+      }
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}

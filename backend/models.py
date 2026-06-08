@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any, Literal, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 MemberRole = Literal['leader', 'admin', 'member']
 RegistrationStatus = Literal['registered', 'cancelled']
@@ -12,6 +12,7 @@ AnnouncementStatus = Literal['draft', 'published']
 
 class ApiResponse(BaseModel):
     data: Any
+    message: str = '成功'
 
 
 class MemberBase(BaseModel):
@@ -62,6 +63,7 @@ class ActivityBase(BaseModel):
     distance_km: Optional[float] = Field(default=None, ge=0)
     pace_group: Optional[str] = Field(default=None, max_length=50)
     description: Optional[str] = Field(default=None, max_length=500)
+    max_participants: Optional[int] = Field(default=None, gt=0)
 
     model_config = {'extra': 'allow'}
 
@@ -74,6 +76,7 @@ class ActivityCreate(BaseModel):
     distance_km: Optional[float] = Field(default=None, ge=0)
     pace_group: Optional[str] = Field(default=None, max_length=50)
     description: Optional[str] = Field(default=None, max_length=500)
+    max_participants: Optional[int] = Field(default=None, gt=0)
     model_config = {'extra': 'allow'}
 
 
@@ -85,6 +88,7 @@ class ActivityUpdate(BaseModel):
     distance_km: Optional[float] = Field(default=None, ge=0)
     pace_group: Optional[str] = Field(default=None, max_length=50)
     description: Optional[str] = Field(default=None, max_length=500)
+    max_participants: Optional[int] = Field(default=None, gt=0)
 
 
 class ActivityOut(ActivityBase):
@@ -107,7 +111,7 @@ class RegistrationOut(BaseModel):
 
 class AttendanceCreate(BaseModel):
     member_id: int = Field(gt=0)
-    activity_id: int = Field(gt=0)
+    activity_id: int = Field(default=0)
     checked_in_at: Optional[datetime] = None
     gps_checked: bool = False
 
@@ -117,6 +121,72 @@ class WorkerIntakeCreate(BaseModel):
     name: str = Field(min_length=1, max_length=120)
     status: Literal['active', 'paused', 'disabled'] = 'active'
     capabilities: list[str] = Field(default_factory=list)
+
+
+def _contains_chinese(value: str) -> bool:
+    """判断文本是否包含中文字符。
+
+    Args:
+        value: 待检查文本。
+
+    Returns:
+        包含中文字符时返回 True。
+    """
+    return any('\u4e00' <= char <= '\u9fff' for char in value)
+
+
+class TaskItemCreate(BaseModel):
+    """工作区任务卡片创建请求。
+
+    Attributes:
+        task_key: 工作区内唯一任务键。
+        title: 中文任务标题。
+        description: 中文任务描述。
+        status: 任务状态。
+        assignee: 负责人。
+        priority: 任务优先级。
+    """
+
+    task_key: str = Field(min_length=1, max_length=120)
+    title: str = Field(min_length=1, max_length=200)
+    description: str = Field(min_length=1, max_length=2000)
+    status: Literal['todo', 'ready', 'running', 'done'] = 'todo'
+    assignee: str = Field(min_length=1, max_length=120)
+    priority: int = Field(default=0, ge=0, lt=1000)
+
+    @field_validator('task_key', 'title', 'description', mode='after')
+    @classmethod
+    def strip_required_text(cls, value: str) -> str:
+        """清理必填文本字段前后空白。"""
+        cleaned = value.strip()
+        if not cleaned:
+            raise ValueError('字段不能为空')
+        return cleaned
+
+    @field_validator('title', mode='after')
+    @classmethod
+    def validate_chinese_title(cls, value: str) -> str:
+        """校验标题包含中文。"""
+        if not _contains_chinese(value):
+            raise ValueError('标题必须包含中文')
+        return value
+
+    @field_validator('description', mode='after')
+    @classmethod
+    def validate_chinese_description(cls, value: str) -> str:
+        """校验描述包含中文。"""
+        if not _contains_chinese(value):
+            raise ValueError('描述必须包含中文')
+        return value
+
+    @field_validator('assignee', mode='after')
+    @classmethod
+    def normalize_assignee(cls, value: str) -> str:
+        """清理负责人字段。"""
+        cleaned = value.strip()
+        if not cleaned:
+            raise ValueError('负责人不能为空')
+        return cleaned
 
 
 class WorkerIntakeOut(BaseModel):

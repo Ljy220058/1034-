@@ -22,6 +22,24 @@ def initialize_database(settings=None) -> None:
     with database.connect(db_path) as connection:
         connection.execute(
             '''
+            CREATE TABLE IF NOT EXISTS workspace_task_items (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                workspace TEXT NOT NULL,
+                task_key TEXT NOT NULL,
+                title TEXT NOT NULL,
+                status TEXT NOT NULL CHECK (status IN ('todo', 'ready', 'running', 'blocked', 'done', 'archived')),
+                assignee TEXT,
+                priority INTEGER NOT NULL DEFAULT 0,
+                updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                metadata TEXT NOT NULL DEFAULT '{}',
+                task_id TEXT,
+                parent_task_id TEXT,
+                UNIQUE(workspace, task_key)
+            )
+            ''')
+
+        connection.execute(
+            '''
             CREATE TABLE IF NOT EXISTS workspace_tasks (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 workspace TEXT NOT NULL,
@@ -32,6 +50,8 @@ def initialize_database(settings=None) -> None:
                 priority INTEGER NOT NULL DEFAULT 0,
                 updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 metadata TEXT NOT NULL DEFAULT '{}',
+                task_id TEXT,
+                parent_task_id TEXT,
                 UNIQUE(workspace, task_key)
             )
             '''

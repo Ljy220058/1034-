@@ -19,8 +19,8 @@ def read_announcements(current_user: CurrentUser = Depends(get_current_user), st
 def create_announcement_endpoint(payload: AnnouncementCreate = Body(...), current_user: CurrentUser | None = Depends(get_optional_current_user)) -> ApiResponse:
     admin_or_leader(current_user)
     data = announcement_payload(payload)
-    announcement = create_announcement(AnnouncementCreate(**data))
-    return ApiResponse(data=announcement.model_dump(mode='json'))
+    record = create_announcement(AnnouncementCreate(**data))
+    return ApiResponse(data=record.model_dump(mode='json'))
 
 
 @router.get('/{announcement_id}', response_model=ApiResponse)
@@ -34,7 +34,7 @@ def read_announcement(announcement_id: int, current_user: CurrentUser = Depends(
 @router.patch('/{announcement_id}', response_model=ApiResponse)
 def patch_announcement(announcement_id: int, payload: AnnouncementUpdate = Body(...), current_user: CurrentUser | None = Depends(get_optional_current_user)) -> ApiResponse:
     admin_or_leader(current_user)
-    data = announcement_payload(payload)
+    data = payload.model_dump(exclude_unset=True)
     announcement = update_announcement(announcement_id, AnnouncementUpdate(**data))
     if announcement is None:
         raise HTTPException(status_code=404, detail='announcement not found')

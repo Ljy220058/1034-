@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from ..models import ApiResponse, MemberCreate, MemberUpdate, UserRegister
+from ..models import ApiResponse, MemberCreate, MemberUpdate, UserLogin, UserRegister
 from ..repository import create_member, delete_member, get_member, list_members, update_member
 from .common import (
     CurrentUser,
@@ -33,7 +33,11 @@ def create_member_endpoint(payload: MemberCreate, current_user: CurrentUser = De
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='forbidden')
     if payload.role not in {ROLE_MEMBER, ROLE_ADMIN, ROLE_LEADER}:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='invalid role')
-    member = create_member(UserRegister(**payload.model_dump(exclude={'role'})))
+    import hashlib, secrets
+    member_data = payload.model_dump(exclude={'role'})
+    member_data['password_hash'] = ''
+    member_id = create_member(**member_data)
+    member = get_member(member_id)
     return ApiResponse(data=member_to_public(member))
 
 
@@ -78,3 +82,27 @@ def remove_member(member_id: int, current_user: CurrentUser = Depends(get_curren
     if not deleted:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='member not found')
     return ApiResponse(data={'deleted': True})
+
+
+@router.post('/register', response_model=ApiResponse, status_code=status.HTTP_201_CREATED)
+def register_member(payload: UserRegister) -> ApiResponse:
+    """注册成员账号。"""
+    member_data = payload.model_dump(exclude={'password'})
+    member_id = create_member(**member_data)
+    member = get_member(member_id)
+    if member is None:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail='服务器内部错误')
+    return ApiResponse(data=member_to_public(member))
+
+
+@router.post('/login', response_model=ApiResponse)
+def login_member(payload: UserLogin) -> ApiResponse:
+    """登录成员账号。"""
+    member = None
+    for item in list_members():
+        if getattr(item, 'phone', None) == payload.phone:
+            member = item
+            break
+    if member is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='账号或密码错误')
+    return ApiResponse(data={'access_token': f'{member.id}:{member.role}:2099-01-01T00:00:00+00:00'})

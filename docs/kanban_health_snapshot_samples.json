@@ -1,0 +1,112 @@
+{
+  "scenarios": {
+    "normal": [
+      {
+        "id": "t_normal_001",
+        "title": "生成今日训练任务摘要",
+        "assignee": "devops-engineer",
+        "status": "running",
+        "created_at": null,
+        "created_at_age_seconds": 1200,
+        "started_at": null,
+        "started_at_age_seconds": 600,
+        "workspace_path": "/root/autodl-tmp/projects/hermes-swarm-lab",
+        "current_run_id": 101,
+        "max_runtime_seconds": 7200,
+        "last_heartbeat_at": null,
+        "last_heartbeat_at_age_seconds": 300
+      },
+      {
+        "id": "t_normal_002",
+        "title": "补充跑团活动导入手册",
+        "assignee": "writer",
+        "status": "ready",
+        "created_at": null,
+        "created_at_age_seconds": 1800,
+        "started_at": null,
+        "workspace_path": "/root/autodl-tmp/projects/hermes-swarm-lab/docs",
+        "current_run_id": null
+      }
+    ],
+    "long_running": [
+      {
+        "id": "t_long_001",
+        "title": "批量巡检跑团任务日志",
+        "assignee": "devops-engineer",
+        "status": "running",
+        "created_at": null,
+        "created_at_age_seconds": 22000,
+        "started_at": null,
+        "started_at_age_seconds": 18000,
+        "workspace_path": "/root/autodl-tmp/projects/hermes-swarm-lab",
+        "current_run_id": 202,
+        "max_runtime_seconds": 7200,
+        "last_heartbeat_at": null,
+        "last_heartbeat_at_age_seconds": 5400
+      },
+      {
+        "id": "t_long_002",
+        "title": "等待 worker 领取的创意分配任务",
+        "assignee": "idea-scout",
+        "status": "todo",
+        "created_at": null,
+        "created_at_age_seconds": 100000,
+        "started_at": null,
+        "workspace_path": "/root/autodl-tmp/projects/hermes-swarm-lab",
+        "current_run_id": null
+      },
+      {
+        "id": "t_long_003",
+        "title": "正常运行中的短任务",
+        "assignee": "reviewer",
+        "status": "running",
+        "created_at": null,
+        "created_at_age_seconds": 1500,
+        "started_at": null,
+        "started_at_age_seconds": 900,
+        "workspace_path": "/tmp/kanban-worktree",
+        "current_run_id": 203,
+        "max_runtime_seconds": 3600,
+        "last_heartbeat_at": null,
+        "last_heartbeat_at_age_seconds": 200
+      }
+    ],
+    "blocked": [
+      {
+        "id": "t_block_001",
+        "title": "需要人工确认部署窗口",
+        "assignee": "devops-engineer",
+        "status": "blocked",
+        "created_at": null,
+        "created_at_age_seconds": 7200,
+        "started_at": null,
+        "started_at_age_seconds": 3600,
+        "workspace_path": "/root/autodl-tmp/projects/hermes-swarm-lab",
+        "current_run_id": 301,
+        "last_failure_error": "等待人工确认是否可重启服务"
+      },
+      {
+        "id": "t_block_002",
+        "title": "等待产品确认字段命名",
+        "assignee": "backend-worker",
+        "status": "blocked",
+        "created_at": null,
+        "created_at_age_seconds": 14400,
+        "started_at": null,
+        "workspace_path": "/root/autodl-tmp/projects/hermes-swarm-lab/backend",
+        "current_run_id": null
+      },
+      {
+        "id": "t_block_003",
+        "title": "可继续领取的文档整理",
+        "assignee": "writer",
+        "status": "ready",
+        "created_at": null,
+        "created_at_age_seconds": 1800,
+        "started_at": null,
+        "workspace_path": "/root/autodl-tmp/projects/hermes-swarm-lab/docs",
+        "current_run_id": null
+      }
+    ]
+  }
+}

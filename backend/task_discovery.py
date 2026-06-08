@@ -122,6 +122,33 @@ def upsert_workspace_task(*, task_id: str, title: str, status: str, updated_at: 
         )
 
 
+def create_task_payloads() -> list[dict]:
+    """Create default kanban task payloads for creative task flows.
+
+    Returns:
+        List of task payload dicts.
+    """
+    return [
+        {
+            'task_key': 'creative-task-001',
+            'title': '生成活动创意',
+            'status': 'todo',
+            'description': '自动生成社群活动创意任务',
+            'assignee': None,
+            'priority': 5,
+        },
+        {
+            'task_key': 'creative-task-002',
+            'title': '审核活动方案',
+            'status': 'todo',
+            'description': '审核并优化自动生成的活动方案',
+            'assignee': None,
+            'priority': 4,
+        },
+    ]
+
+
+
 def list_workspace_tasks(workspace_path: str | Path, *, limit: int = 100, status_filter: str | None = None) -> list[WorkspaceTask]:
     ensure_task_discovery_schema()
     if limit < 1 or limit > 500:

@@ -1,398 +1,151 @@
-/**
- * HTTP client helpers for the Running Club frontend.
- */
-function buildUrl(baseUrl, path, query) {
-  const trimmedBase = String(baseUrl || '').replace(/\/$/, '');
-  const normalizedPath = String(path || '').startsWith('/') ? path : `/${path}`;
-  const url = `${trimmedBase}${normalizedPath}`;
-  const params = new URLSearchParams();
-  Object.entries(query || {}).forEach(([key, value]) => {
-    if (value !== undefined && value !== null && value !== '') {
-      params.set(key, value);
-    }
-  });
-  const qs = params.toString();
-  return qs ? `${url}?${qs}` : url;
-}
-
-/**
- * Create a small API client around the backend JSON contract.
- *
- * @param {object} [options]
- * @param {string} [options.baseUrl='/api/v1']
- * @param {(input: string, init?: RequestInit) => Promise<Response>} [options.fetchImpl]
- * @returns {{listAnnouncements:(query?: object)=>Promise<unknown>, createAnnouncement:(body: object)=>Promise<unknown>, listActivities:()=>Promise<unknown>, listTaskQueueTasks:(query?: object)=>Promise<unknown>, listKanbanTasks:(query?: object)=>Promise<unknown>, getConnectionStatus:()=>Promise<unknown>, retryConnection:()=>Promise<unknown>}}
- */
-function createApiClient(options = {}) {
-  const baseUrl = options.baseUrl || '/api/v1';
-  const fetchImpl = options.fetchImpl || (typeof fetch === 'function' ? fetch.bind(globalThis) : null);
-  if (!fetchImpl) {
-    throw new Error('fetch implementation is required');
-  }
-
-  async function request(path, requestOptions = {}) {
-    const response = await fetchImpl(buildUrl(baseUrl, path, requestOptions.query), {
-      method: requestOptions.method || 'GET',
-      headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
-      body: requestOptions.body === undefined ? undefined : JSON.stringify(requestOptions.body),
-    });
-    const payload = await response.json();
-    if (!response.ok) {
-      const error = new Error(payload.detail || payload.message || `Request failed with status ${response.status}`);
-      error.status = response.status;
-      error.payload = payload;
-      throw error;
-    }
-    if (!payload || !Object.prototype.hasOwnProperty.call(payload, 'data')) {
-      throw new Error('Invalid API response: missing data field');
-    }
-    return payload.data;
-  }
-
-  return {
-    listAnnouncements(query = {}) {
-      return request('/announcements', { query });
-    },
-    createAnnouncement(body) {
-      return request('/announcements', { method: 'POST', body });
-    },
-    listActivities() {
-      return request('/activities');
-    },
-    listTaskQueueTasks(query = {}) {
-      return request('/task-queue/tasks', { query });
-    },
-    listKanbanTasks(query = {}) {
-      return request('/kanban/tasks', { query });
-    },
-    listKanbanTasks(query = {}) {
-      return request('/kanban/tasks', { query });
-    },
-    getConnectionStatus() {
-      return request('/status');
-    },
-    retryConnection() {
-      return request('/status/retry', { method: 'POST' });
-    },
-  };
-}
-
-/**
- * Boot the announcements section and task creator form.
- *
- * @param {object} [options]
- * @param {Document} [options.document]
- * @param {{listAnnouncements:(query?: object)=>Promise<unknown>}} [options.client]
- * @returns {Promise<unknown>|null}
- */
-async function bootstrap(options = {}) {
-  const documentRef = options.document || (typeof document !== 'undefined' ? document : null);
-  if (!documentRef) return null;
-  const target = documentRef.querySelector('[data-announcements]');
-  if (!target) return null;
-  const client = options.client || createApiClient(options);
-  try {
-    const announcements = await client.listAnnouncements({ status: 'published' });
-    renderAnnouncements(announcements, target);
-    bootstrapTaskCreator({ document: documentRef });
-    return announcements;
-  } catch (error) {
-    target.innerHTML = `<p class="error-state">${escapeHtml(error.message)}</p>`;
-    throw error;
-  }
-}
-
-function normalizeConnectionStatus(rawStatus) {
-  if (!rawStatus || typeof rawStatus !== 'object') {
-    return {
-      status: 'unknown',
-      label: '连接状态未知',
-      tone: 'amber',
-      message: '正在等待状态服务返回结果。',
-      retryLabel: '重试连接',
-      canRetry: true,
-    };
-  }
-
-  const status = String(rawStatus.status || rawStatus.state || rawStatus.connection_status || 'unknown').toLowerCase();
-  const map = {
-    connected: { label: '已连接', tone: 'green', message: rawStatus.message || '状态服务在线，实时数据正常刷新。', retryLabel: '刷新连接', canRetry: true },
-    reconnecting: { label: '重连中', tone: 'amber', message: rawStatus.message || '正在尝试恢复与服务的连接。', retryLabel: '再次重试', canRetry: true },
-    disconnected: { label: '已断开', tone: 'red', message: rawStatus.message || '连接已断开，请手动重试。', retryLabel: '重新连接', canRetry: true },
-    error: { label: '状态异常', tone: 'red', message: rawStatus.message || '状态接口返回异常。', retryLabel: '重试连接', canRetry: true },
-    unknown: { label: '连接状态未知', tone: 'amber', message: rawStatus.message || '暂时无法确认连接状态。', retryLabel: '重试连接', canRetry: true },
-  };
-  const resolved = map[status] || map.unknown;
-  return {
-    status,
-    label: resolved.label,
-    tone: resolved.tone,
-    message: resolved.message,
-    retryLabel: resolved.retryLabel,
-    canRetry: resolved.canRetry,
-  };
-}
-
-function setConnectionStatusView(nodes, view) {
-  if (!nodes || !nodes.badge) return;
-  nodes.badge.className = `connection-badge ${view.tone}`;
-  nodes.badge.textContent = view.label;
-  if (nodes.message) nodes.message.textContent = view.message;
-  if (nodes.retry) {
-    nodes.retry.textContent = view.retryLabel;
-    nodes.retry.disabled = !view.canRetry;
-  }
-}
-
-async function bootstrapConnectionStatus(options = {}) {
-  const documentRef = options.document || (typeof document !== 'undefined' ? document : null);
-  if (!documentRef) return null;
-  const badge = documentRef.querySelector('[data-connection-badge]');
-  const message = documentRef.querySelector('[data-connection-message]');
-  const retry = documentRef.querySelector('[data-connection-retry]');
-  if (!badge || !message || !retry) return null;
-
-  const client = options.client || createApiClient(options);
-  const nodes = { badge, message, retry };
-  let inFlight = null;
-
-  const load = async () => {
-    badge.dataset.state = 'loading';
-    setConnectionStatusView(nodes, { status: 'loading', label: '连接检查中…', tone: 'amber', message: '正在读取实时连接状态。', retryLabel: '重试连接', canRetry: false });
-    retry.disabled = true;
-    try {
-      const status = await client.getConnectionStatus();
-      const view = normalizeConnectionStatus(status);
-      badge.dataset.state = view.status;
-      setConnectionStatusView(nodes, view);
-      return view;
-    } catch (error) {
-      badge.dataset.state = 'error';
-      setConnectionStatusView(nodes, {
-        status: 'error',
-        label: '加载失败',
-        tone: 'red',
-        message: error.message || '无法获取连接状态。',
-        retryLabel: '再次重试',
-        canRetry: true,
-      });
-      return null;
-    }
-  };
-
-  retry.addEventListener('click', async () => {
-    if (inFlight) return inFlight;
-    retry.disabled = true;
-    inFlight = (async () => {
-      try {
-        const status = await client.retryConnection();
-        const view = normalizeConnectionStatus(status);
-        badge.dataset.state = view.status;
-        setConnectionStatusView(nodes, view);
-        return view;
-      } catch (error) {
-        badge.dataset.state = 'error';
-        setConnectionStatusView(nodes, {
-          status: 'error',
-          label: '重连失败',
-          tone: 'red',
-          message: error.message || '重连请求失败。',
-          retryLabel: '再次重试',
-          canRetry: true,
-        });
-        return null;
-      } finally {
-        inFlight = null;
-      }
-    })();
-    return inFlight;
-  });
-
-  const initial = await load();
-  return { load, initial };
-}
-
-/**
- * Render a task list board with filters and state handling.
- *
- * @param {object} [options]
- * @param {Document} [options.document]
- * @param {{listTaskQueueTasks:(query?: object)=>Promise<unknown>}} [options.client]
- * @returns {Promise<unknown>|null}
- */
-async function bootstrapTaskList(options = {}) {
-  const documentRef = options.document || (typeof document !== 'undefined' ? document : null);
-  if (!documentRef) return null;
-  const board = documentRef.querySelector('[data-task-board]');
-  if (!board) return null;
-  const client = options.client || createApiClient(options);
-  const nodes = {
-    summary: documentRef.querySelector('[data-task-summary]'),
-    assignee: documentRef.querySelector('[data-task-filter="assignee"]'),
-    status: documentRef.querySelector('[data-task-filter="status"]'),
-    refresh: documentRef.querySelector('[data-task-refresh]'),
-    list: documentRef.querySelector('[data-task-list]'),
-    state: documentRef.querySelector('[data-task-state]'),
-  };
-
-  const normalizeTasks = (payload) => {
-    if (Array.isArray(payload)) return payload;
-    if (payload && Array.isArray(payload.items)) return payload.items;
-    if (payload && Array.isArray(payload.tasks)) return payload.tasks;
-    return [];
-  };
-
-  const toText = (value, fallback = '—') => {
-    const text = value === undefined || value === null ? '' : String(value).trim();
-    return text || fallback;
-  };
-
-  const getTaskText = (task, keys, fallback = '—') => {
-    for (const key of keys) {
-      const value = task?.[key];
-      if (value !== undefined && value !== null && String(value).trim() !== '') {
-        return String(value);
-      }
-    }
-    return fallback;
-  };
-
-  const getTaskId = (task, index) => getTaskText(task, ['id', 'task_id', 'taskId', 'slug'], `task-${index + 1}`);
-
-  const getTaskActionItems = (task) => {
-    if (Array.isArray(task?.actions) && task.actions.length) return task.actions;
-    return [
-      { label: '查看', tone: 'primary' },
-      { label: '推进', tone: 'neutral' },
-    ];
-  };
-
-  const renderState = (kind, title, message) => {
-    if (!nodes.state) return;
-    nodes.state.innerHTML = `
-      <div class="task-state ${kind}">
-        <h3>${escapeHtml(title)}</h3>
-        <p>${escapeHtml(message)}</p>
-      </div>
-    `;
-  };
-
-  const renderSummary = (tasks) => {
-    if (!nodes.summary) return;
-    const counts = tasks.reduce((acc, task) => {
-      const status = String(getTaskText(task, ['status', 'state', 'task_status'], 'unknown')).toLowerCase();
-      acc[status] = (acc[status] || 0) + 1;
-      return acc;
-    }, {});
-    const total = tasks.length;
-    const active = total - (counts.done || counts.completed || 0);
-    nodes.summary.innerHTML = `
-      <span class="summary-chip">总计 ${total}</span>
-      <span class="summary-chip">进行中 ${counts.running || counts.in_progress || 0}</span>
-      <span class="summary-chip">已完成 ${counts.done || counts.completed || 0}</span>
-      <span class="summary-chip">活跃 ${active}</span>
-    `;
-  };
-
-  const renderList = (tasks) => {
-    if (!nodes.list) return;
-    if (!tasks.length) {
-      nodes.list.innerHTML = `
-        <article class="task-empty-state" aria-label="暂无任务">
-          <h3>当前没有符合条件的任务</h3>
-          <p>可以切换筛选条件，或创建新的任务卡片来开始工作。</p>
-        </article>
-      `;
-      return;
-    }
-    nodes.list.innerHTML = tasks.map((task, index) => {
-      const id = getTaskId(task, index);
-      const title = toText(getTaskText(task, ['title', 'name', 'summary'], '未命名任务'));
-      const status = toText(getTaskText(task, ['status', 'state', 'task_status'], 'unknown'));
-      const assignee = toText(getTaskText(task, ['assignee', 'owner', 'assigned_to'], '未分配'));
-      const priority = toText(getTaskText(task, ['priority', 'level'], 'normal'));
-      const workspace = toText(getTaskText(task, ['workspace_path', 'workspace', 'path'], '—'));
-      const description = toText(getTaskText(task, ['body', 'description', 'summary_text'], '暂无描述'));
-      const actions = getTaskActionItems(task).map((action) => `<button class="task-action ${escapeHtml(action.tone || 'neutral')}" type="button">${escapeHtml(action.label)}</button>`).join('');
-      return `
-        <article class="task-card" data-task-id="${escapeHtml(id)}">
-          <div class="task-card-header">
-            <div>
-              <p class="task-meta">#${escapeHtml(id)} · ${escapeHtml(status)}</p>
-              <h3>${escapeHtml(title)}</h3>
-            </div>
-            <span class="task-badge">${escapeHtml(priority)}</span>
-          </div>
-          <p class="task-description">${escapeHtml(description)}</p>
-          <dl class="task-details">
-            <div><dt>负责人</dt><dd>${escapeHtml(assignee)}</dd></div>
-            <div><dt>工作区</dt><dd>${escapeHtml(workspace)}</dd></div>
-          </dl>
-          <div class="task-actions">${actions}</div>
-        </article>
-      `;
-    }).join('');
-  };
-
-  const getFilterValue = (node) => node ? String(node.value || '').trim() : '';
-
-  const loadTasks = async () => {
-    board.dataset.state = 'loading';
-    renderState('loading', '加载中', '正在获取工作区任务列表。');
-    try {
-      const tasks = normalizeTasks(await client.listTaskQueueTasks({
-        assignee: getFilterValue(nodes.assignee),
-        status: getFilterValue(nodes.status),
+     1|window.apiClient = (() => {
+     2|  "use strict";
+     3|
+     4|  const API_BASE = "/api/v1";
+     5|  const AUTH_TOKEN_KEYS = ["access_token", "accessToken", "token", "authToken", "workerAccessToken"];
+     6|
+     7|  function readAccessToken() {
+     8|    if (typeof localStorage === "undefined") return "";
+     9|    for (const key of AUTH_TOKEN_KEYS) {
+    10|      const value = localStorage.getItem(key);
+    11|      if (value && String(value).trim()) {
+    12|        return String(value).trim();
+    13|      }
+    14|    }
+    15|    return "";
+    16|  }
+    17|
+    18|  function createJsonHeaders({ auth = false, hasBody = false } = {}) {
+    19|    const headers = { Accept: "application/json" };
+    20|    if (hasBody) {
+    21|      headers["Content-Type"] = "application/json";
+    22|    }
+    23|    if (auth) {
+    24|      const token = readAccessToken();
+    25|      if (token) {
+    26|        headers.Authorization = `Bearer ${token}`;
+    27|      }
+    28|    }
+    29|    return headers;
+    30|  }
+    31|
+    32|  async function parseJsonResponse(response) {
+    33|    const text = await response.text();
+    34|    if (!text) return null;
+    35|    try {
+    36|      return JSON.parse(text);
+    37|    } catch {
+    38|      return { detail: text };
+    39|    }
+    40|  }
+    41|
+    42|  function buildApiError(response, payload) {
+    43|    const detail = payload?.detail;
+    44|    const message = typeof detail === "string" && detail.trim()
+    45|      ? detail.trim()
+    46|      : (response.status === 401 || response.status === 403 ? "未登录或权限不足" : `HTTP ${response.status}`);
+    47|    const error = new Error(message);
+    48|    error.status = response.status;
+    49|    error.payload = payload;
+    50|    return error;
+    51|  }
+    52|
+    53|  async function fetchJson(path, { auth = false, method = "GET", body } = {}) {
+    54|    const response = await fetch(`${API_BASE}${path}`, {
+    55|      method,
+    56|      headers: createJsonHeaders({ auth, hasBody: body !== undefined }),
+    57|      body: body === undefined ? undefined : JSON.stringify(body),
+    58|    });
+    59|    const payload = await parseJsonResponse(response);
+    60|    if (!response.ok) {
+    61|      throw buildApiError(response, payload);
+    62|    }
+    63|    return payload;
+    64|  }
+    65|
+    66|  function normalizeTaskQueue(payload) {
+    67|    const list = Array.isArray(payload) ? payload : payload?.data || payload?.tasks || payload?.items || [];
+    68|    return list.map((item, index) => ({
+    69|      id: item.id || item.task_id || `task-${index + 1}`,
+    70|      title: item.title || item.name || `待处理任务 ${index + 1}`,
+    71|      summary: item.summary || item.description || item.detail || "待补充说明",
+    72|      assignee: item.assignee || item.owner || "未分配",
+    73|      status: item.status || item.state || "todo",
+    74|      priority: item.priority || item.priority_level || item.rank || "normal",
+    75|      workspace: item.workspace || item.workspace_kind || "dir",
+    76|      updatedAt: item.updated_at || item.updatedAt || item.updated || "",
+    77|    }));
+    78|  }
+    79|
+    function normalizeWorkerDirectory(payload) {
+      const list = Array.isArray(payload) ? payload : payload?.data || payload?.workers || payload?.items || [];
+      return list.map((item, index) => ({
+        id: item.id || item.profile || item.name || `worker-${index + 1}`,
+        name: item.name || item.profile || item.id || `worker-${index + 1}`,
+        title: item.title || item.label || item.role || "空闲 worker",
+        type: item.type || item.category || item.group || "前端协作",
+        status: item.status || item.state || "idle",
+        load: Number(item.load ?? item.score ?? 0),
+        capability: Array.isArray(item.capability) ? item.capability : (Array.isArray(item.skills) ? item.skills : []),
+        bio: item.bio || item.description || "",
       }));
-      const filtered = tasks.filter((task) => {
-        const assignee = getTaskText(task, ['assignee', 'owner', 'assigned_to'], '').toLowerCase();
-        const status = getTaskText(task, ['status', 'state', 'task_status'], '').toLowerCase();
-        const assigneeFilter = getFilterValue(nodes.assignee).toLowerCase();
-        const statusFilter = getFilterValue(nodes.status).toLowerCase();
-        const assigneeMatch = !assigneeFilter || assignee === assigneeFilter;
-        const statusMatch = !statusFilter || status === statusFilter;
-        return assigneeMatch && statusMatch;
-      });
-      board.dataset.state = 'ready';
-      renderSummary(filtered);
-      renderList(filtered);
-      if (!filtered.length) {
-        renderState('empty', '没有匹配的任务', '当前筛选条件下没有任务。');
-      } else {
-        renderState('ready', '任务已加载', `已加载 ${filtered.length} 个任务。`);
-      }
-      return filtered;
-    } catch (error) {
-      board.dataset.state = 'error';
-      renderState('error', '加载失败', error.message || '无法获取任务列表。');
-      if (nodes.list) {
-        nodes.list.innerHTML = '';
-      }
-      if (nodes.summary) {
-        nodes.summary.innerHTML = '';
-      }
-      return [];
     }
-  };
 
-  const rerender = () => loadTasks();
-  nodes.assignee?.addEventListener('change', rerender);
-  nodes.status?.addEventListener('change', rerender);
-  nodes.refresh?.addEventListener('click', rerender);
+    function normalizeMemberList(payload) {
+      const list = Array.isArray(payload) ? payload : payload?.data || payload?.members || payload?.items || [];
+      return list.map((item, index) => ({
+        id: item.id || item.member_id || `member-${index + 1}`,
+        name: item.name || item.nickname || item.username || `成员 ${index + 1}`,
+        phone: item.phone || item.mobile || item.tel || "",
+        role: normalizeMemberRole(item.role || item.member_role || item.type),
+        running_years: Number(item.running_years ?? item.runningYears ?? item.years_of_running ?? item.years) || 0,
+        pace: item.pace || item.avg_pace || item.running_pace || "",
+        usual_distance_km: Number(item.usual_distance_km ?? item.usualDistanceKm ?? item.distance_km ?? item.distance) || 0,
+        training_goal: item.training_goal || item.goal || item.trainingGoal || item.note || "",
+        created_at: item.created_at || item.createdAt || item.joined_at || "",
+      }));
+    }
 
-  return loadTasks();
-}
+    function normalizeMemberRole(role) {
+      const value = String(role || "member").toLowerCase();
+      return ["member", "leader", "admin"].includes(value) ? value : "member";
+    }
 
-/**
- * Export the browser entry points for convenience.
- */
-export {
-  buildUrl,
-  bootstrap,
-  bootstrapConnectionStatus,
-  bootstrapTaskCreator,
-  bootstrapTaskList,
-  createApiClient,
-  normalizeConnectionStatus,
-  setConnectionStatusView,
-};
+    async function fetchMemberList({ auth = false, role = "all" } = {}) {
+      const query = role && role !== "all" ? `?role=${encodeURIComponent(role)}` : "";
+      const payload = await fetchJson(`/members${query}`, { auth });
+      return normalizeMemberList(payload);
+    }
+
+    94|  async function fetchTaskQueue({ auth = false } = {}) {
+    95|    const payload = await fetchJson("/workspaces/task-queue/tasks", { auth });
+    96|    return normalizeTaskQueue(payload);
+    97|  }
+    98|
+    99|  async function fetchWorkerDirectory({ auth = false } = {}) {
+   100|    const payload = await fetchJson("/workspaces/task-queue/workers", { auth });
+   101|    return normalizeWorkerDirectory(payload);
+   102|  }
+   103|
+   104|  async function dispatchCreativeIdea(idea, { auth = true } = {}) {
+   105|    return fetchJson("/workspaces/task-queue/dispatch", {
+   106|      auth,
+   107|      method: "POST",
+   108|      body: idea,
+   109|    });
+   110|  }
+   111|
+   return {
+     readAccessToken,
+     createJsonHeaders,
+     fetchJson,
+     fetchTaskQueue,
+     fetchWorkerDirectory,
+     fetchMemberList,
+     dispatchCreativeIdea,
+     normalizeTaskQueue,
+     normalizeWorkerDirectory,
+     normalizeMemberList,
+   };
+
+   123|

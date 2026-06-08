@@ -1,0 +1,45 @@
+# 跑团训练计划完成率质量门禁说明
+
+本脚本/接口用于检查训练计划完成率相关输入是否满足质量要求，重点覆盖跨月边界、闰日、重复打卡、缺失每日目标、完成率超过 100% 以及中文错误提示一致性。
+
+## 如何运行
+
+接口地址：`POST /api/v1/training-plan/completion-quality-gate`
+
+请求示例：
+
+```bash
+curl -X POST 'http://127.0.0.1:8000/api/v1/training-plan/completion-quality-gate' \
+  -H 'Authorization: Bearer 1:admin:2099-01-01T00:00:00+00:00' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "plan_start_date": "2024-02-28",
+    "plan_end_date": "2024-03-02",
+    "completion_rate": 88.5,
+    "attendance_records": [
+      {"member_id": 1, "checked_in_at": "2024-02-29T08:00:00+00:00"}
+    ],
+    "daily_targets": [
+      {"plan_date": "2024-02-28", "target_distance_km": 5}
+    ]
+  }'
+```
+
+返回结果中的 `data.rules` 会列出每条规则的 `rule_key`、`passed`、`message` 和 `detail`。
+
+## 失败时如何定位
+
+1. 先看 `data.rules` 中哪一条 `passed=false`。
+2. 如果是日期错误，先检查 `plan_start_date` / `plan_end_date` 是否为有效 ISO 日期。
+3. 如果是重复打卡，检查 `attendance_records` 中同一成员同一天是否出现多次。
+4. 如果是缺失每日目标，检查 `daily_targets` 是否补齐了对应日期。
+5. 如果是完成率超过 100%，通常是重复统计或目标值填写有误。
+
+## 规则清单
+
+- 跨月边界：检查开始和结束日期是否跨月。
+- 闰日：检查计划区间是否包含 2 月 29 日。
+- 重复打卡：同一成员同一天只能算一次。
+- 缺失目标：每日目标不能为空。
+- 完成率超过 100%：超过阈值视为异常。
+- 中文提示一致性：所有失败提示统一使用中文描述。

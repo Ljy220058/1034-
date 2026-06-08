@@ -80,7 +80,7 @@ def test_worker_intake_creates_and_updates_persistence(tmp_path) -> None:
     leader_token = _make_leader(client)
 
     first = client.post(
-        '/api/v1/task-queue/workers/intake',
+        '/api/v1/workers/intake',
         json={
             'worker_key': 'worker-alpha',
             'name': 'Alpha Worker',
@@ -97,7 +97,7 @@ def test_worker_intake_creates_and_updates_persistence(tmp_path) -> None:
     assert first_data['capabilities'] == ['intake', 'verify']
 
     second = client.post(
-        '/api/v1/task-queue/workers/intake',
+        '/api/v1/workers/intake',
         json={
             'worker_key': 'worker-alpha',
             'name': 'Alpha Worker Renamed',
@@ -106,7 +106,7 @@ def test_worker_intake_creates_and_updates_persistence(tmp_path) -> None:
         },
         headers={'Authorization': f'Bearer {leader_token}'},
     )
-    assert second.status_code == 200
+    assert second.status_code == 201
     second_data = second.json()['data']
     assert second_data['id'] == first_data['id']
     assert second_data['name'] == 'Alpha Worker Renamed'
@@ -125,14 +125,14 @@ def test_worker_intake_rejects_bad_status_and_missing_auth(tmp_path) -> None:
     client = _client(tmp_path)
 
     unauthorized = client.post(
-        '/api/v1/task-queue/workers/intake',
+        '/api/v1/workers/intake',
         json={'worker_key': 'worker-beta', 'name': 'Beta Worker', 'status': 'active'},
     )
     assert unauthorized.status_code == 401
 
     leader_token = _make_leader(client)
     invalid = client.post(
-        '/api/v1/task-queue/workers/intake',
+        '/api/v1/workers/intake',
         json={'worker_key': 'worker-beta', 'name': 'Beta Worker', 'status': 'sleeping'},
         headers={'Authorization': f'Bearer {leader_token}'},
     )

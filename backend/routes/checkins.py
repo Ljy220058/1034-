@@ -35,7 +35,7 @@ def create_checkin(activity_id: int, payload: AttendanceCreate, current_user: Cu
     member = get_member(payload.member_id)
     if activity is None or member is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='activity or member not found')
-    attendance, outcome = create_attendance(activity_id, payload.member_id, payload.gps_checked, payload.checked_in_at)
+    attendance, outcome = create_attendance(activity_id, payload.member_id, gps_checked=payload.gps_checked, checked_in_at=payload.checked_in_at)
     if outcome == 'not_found' or attendance is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='activity or member not found')
     if outcome == 'not_registered':

@@ -36,6 +36,7 @@ CREATE TABLE IF NOT EXISTS activities (
     distance_km REAL CHECK (distance_km IS NULL OR distance_km >= 0),
     pace_group TEXT,
     description TEXT,
+    max_participants INTEGER CHECK (max_participants IS NULL OR max_participants > 0),
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -88,8 +89,20 @@ CREATE TABLE IF NOT EXISTS task_queue_workers (
 '''
 
 
+def get_db_path(db_path: Path | None = None) -> Path:
+    """Return the SQLite database path used by the backend.
+
+    Args:
+        db_path: Optional explicit database path.
+
+    Returns:
+        Resolved database path.
+    """
+    return Path(db_path) if db_path is not None else DB_PATH
+
+
 def get_connection(db_path: Path | None = None) -> sqlite3.Connection:
-    connection = sqlite3.connect(db_path or DB_PATH)
+    connection = sqlite3.connect(get_db_path(db_path))
     connection.row_factory = sqlite3.Row
     connection.execute('PRAGMA foreign_keys = ON;')
     return connection

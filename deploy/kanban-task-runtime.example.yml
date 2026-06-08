@@ -1,0 +1,62 @@
+# Kanban 任务运行时限与失败重试配置示例
+# 目的：给调度器和 worker 一个可复用、可验证的默认策略。
+# 说明：这里只放调度策略，不放任何密钥、令牌或业务凭据。
+
+kanban_task_policy:
+  defaults:
+    # 单个 worker 运行超过该秒数后，调度器应终止本次 run 并重新评估任务状态。
+    # 默认 3600 秒适合大多数文档、DevOps、轻量代码任务；长训练/爬取任务应在创建任务时显式加大。
+    max_runtime_seconds: 3600
+
+    # 同一任务连续失败可自动重试的最大次数。超过后应进入 blocked/manual_review，而不是无限重试。
+    max_retries: 2
+
+    # 失败后重新入队策略：
+    # - retry_transient：网络抖动、依赖临时不可用、超时但有心跳，重新入队
+    # - block_permanent：缺少权限、缺少密钥、需求不明确、确定性校验失败，阻断等待人工处理
+    # - never_retry_destructive：涉及删除/覆盖/发布等破坏性动作失败后，不自动重试
+    requeue_strategy: retry_transient
+
+  status_mapping:
+    timeout:
+      next_status: ready
+      retry_counter: increment
+      message_zh: "任务超过运行时限，已终止本次运行并重新入队；如连续超时，请拆分任务或调大 max_runtime_seconds。"
+    transient_failure:
+      next_status: ready
+      retry_counter: increment
+      message_zh: "任务失败但看起来是临时问题，已按 max_retries 策略重新入队。"
+    permanent_failure:
+      next_status: blocked
+      retry_counter: keep
+      message_zh: "任务失败且需要人工判断：请检查权限、缺失配置、需求歧义或不可重复的破坏性操作。"
+    retries_exhausted:
+      next_status: blocked
+      retry_counter: keep
+      message_zh: "任务已达到最大重试次数，为避免阻塞 worker 和浪费资源，已停止自动重试并等待人工处理。"
+
+  decision_rules:
+    retry_when:
+      - "进程被 OOM/临时资源不足终止，但任务本身可幂等重跑"
+      - "外部命令返回临时错误，且没有产生部分发布/删除等破坏性副作用"
+      - "超过 max_runtime_seconds，但最近 1 小时有 heartbeat，说明任务可能需要拆分或调大时限"
+    block_when:
+      - "缺少凭据、权限、人工审批或需求选择"
+      - "同一确定性校验连续失败，继续重试不会改变结果"
+      - "任务已经执行过破坏性或不可幂等步骤，自动重试可能放大损害"
+      - "retry_counter >= max_retries"
+
+  per_task_overrides:
+    examples:
+      - name: "短文档/配置任务"
+        max_runtime_seconds: 900
+        max_retries: 1
+        requeue_strategy: retry_transient
+      - name: "构建/部署任务"
+        max_runtime_seconds: 1800
+        max_retries: 2
+        requeue_strategy: retry_transient
+      - name: "人工审批/凭据缺失任务"
+        max_runtime_seconds: 600
+        max_retries: 0
+        requeue_strategy: block_permanent

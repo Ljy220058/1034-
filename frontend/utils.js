@@ -34,6 +34,17 @@ function validateTaskForm(form) {
   return errors;
 }
 
+function normalizeWorkerAvailability(view) {
+  const status = String(view?.status || '').toLowerCase();
+  return {
+    status,
+    label: view?.label || '未知',
+    tone: view?.tone || 'amber',
+    message: view?.message || '',
+    canAssign: Boolean(view?.available),
+  };
+}
+
 function renderConnectionStatus(view, target) {
   if (!target) return;
   const badgeClass = view.tone || 'amber';
@@ -47,4 +58,47 @@ function renderConnectionStatus(view, target) {
   `;
 }
 
-export { escapeHtml, validateTaskForm, renderConnectionStatus };
+function renderWorkerAvailability(view, target) {
+  if (!target) return;
+  const badgeClass = view.tone || 'amber';
+  target.innerHTML = `
+    <div class="worker-availability ${badgeClass}">
+      <div class="worker-availability__badge" data-worker-availability data-state="${escapeHtml(view.label || '未知')}">${escapeHtml(view.label || '未知')}</div>
+      <p class="worker-availability__message">${escapeHtml(view.message || '')}</p>
+    </div>
+  `;
+}
+
+function applyWorkerAvailabilityBadge(element, view) {
+  if (!element) return;
+  element.classList.remove('is-available', 'is-busy', 'is-offline', 'is-paused');
+  if (view.status === 'idle' || view.status === 'available') {
+    element.classList.add('is-available');
+  } else if (view.status === 'busy' || view.status === 'running' || view.status === 'working') {
+    element.classList.add('is-busy');
+  } else if (view.status === 'paused') {
+    element.classList.add('is-paused');
+  } else {
+    element.classList.add('is-offline');
+  }
+  element.dataset.state = view.status || 'unknown';
+  element.textContent = view.label || '未知';
+}
+
+function renderWorkerAssignmentList(workers, target, onSelect) {
+  if (!target) return;
+  target.innerHTML = (Array.isArray(workers) ? workers : []).map((worker) => {
+    const view = normalizeWorkerAvailability(worker);
+    return `
+      <button class="worker-row ${view.canAssign ? 'is-available' : 'is-unavailable'}" type="button" data-worker-id="${escapeHtml(String(worker.worker_key || worker.task_id || worker.id || ''))}">
+        <strong>${escapeHtml(worker.name || worker.title || worker.worker_key || worker.task_id || '未命名 worker')}</strong>
+        <span>${escapeHtml(view.label)}</span>
+      </button>
+    `;
+  }).join('');
+  target.querySelectorAll('[data-worker-id]').forEach((button) => {
+    button.addEventListener('click', () => onSelect?.(button.dataset.workerId));
+  });
+}
+
+export { escapeHtml, validateTaskForm, renderConnectionStatus, normalizeWorkerAvailability, renderWorkerAvailability, applyWorkerAvailabilityBadge, renderWorkerAssignmentList };

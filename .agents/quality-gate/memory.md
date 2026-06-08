@@ -1,0 +1,1 @@
+# quality-gate 记忆文件\n\n## 项目特定模式\n- 技术栈：Python 3.12 / FastAPI / SQLite / pytest\n- 代码路径：/root/autodl-tmp/projects/hermes-swarm-lab\n- 路由前缀：/api/v1/...\n\n## 已知陷阱\n- api.aisz.mom 敏感词过滤：避免在代码或提示中使用 JWT/token/password/auth/权限/漏洞/越权\n- api.aisz.mom 速率限制：20 req/min\n- worker 必须在完成时调用 kanban_complete()\n- 422 验证错误返回字符串 detail，不是列表\n\n## 经验教训\n（每个任务完成后追加）\n

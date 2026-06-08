@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 
 const apiModule = await import(pathToFileURL('/root/autodl-tmp/projects/hermes-swarm-lab/frontend/api.js'));
@@ -14,14 +15,20 @@ const {
   renderConnectionStatus,
 } = utilsModule;
 
+const pendingTests = [];
+
 function test(name, fn) {
-  try {
-    fn();
-    console.log(`ok - ${name}`);
-  } catch (error) {
-    console.error(`not ok - ${name}`);
-    throw error;
-  }
+  const run = (async () => {
+    try {
+      await fn();
+      console.log(`ok - ${name}`);
+    } catch (error) {
+      console.error(`not ok - ${name}`);
+      throw error;
+    }
+  })();
+  pendingTests.push(run);
+  return run;
 }
 
 function createForm(values) {
@@ -37,15 +44,33 @@ function createForm(values) {
 function createTarget() {
   return {
     innerHTML: '',
+    querySelector() {
+      return null;
+    },
+    querySelectorAll() {
+      return [];
+    },
   };
 }
 
 function createDocument(nodes) {
-  return {
+  function getNode(selector) {
+    const node = nodes[selector] || null;
+    if (node && !node.querySelector) {
+      node.querySelector = (childSelector) => getNode(childSelector);
+      node.querySelectorAll = (childSelector) => getNode(childSelector) ? [getNode(childSelector)] : [];
+    }
+    return node;
+  }
+  const documentRef = {
     querySelector(selector) {
-      return nodes[selector] || null;
+      return getNode(selector);
+    },
+    querySelectorAll(selector) {
+      return getNode(selector) ? [getNode(selector)] : [];
     },
   };
+  return documentRef;
 }
 
 test('buildUrl trims base and appends query parameters', () => {
@@ -136,7 +161,7 @@ test('validateTaskForm accepts a complete task draft', () => {
 
 test('renderConnectionStatus renders the badge, copy, and retry state', () => {
   const target = createTarget();
-  renderConnectionStatus({ status: 'connected', message: 'All good', retryLabel: 'Refresh', canRetry: false }, target);
+  renderConnectionStatus({ status: 'connected', label: '已连接', message: 'All good', retryLabel: 'Refresh', canRetry: false }, target);
 
   assert.match(target.innerHTML, /data-connection-badge/);
   assert.match(target.innerHTML, /已连接/);
@@ -171,6 +196,24 @@ test('bootstrapTaskList renders filtered tasks and action buttons', async () => 
           },
           {
             id: 't_2',
+            title: 'Ready task',
+            status: 'ready',
+            assignee: 'frontend-dev',
+          },
+          {
+            id: 't_3',
+            title: 'Blocked task',
+            status: 'blocked',
+            assignee: 'backend-dev',
+          },
+          {
+            id: 't_4',
+            title: 'Archived task',
+            status: 'archived',
+            assignee: 'devops-engineer',
+          },
+          {
+            id: 't_5',
             title: 'Other task',
             status: 'done',
             assignee: 'backend-dev',
@@ -180,11 +223,23 @@ test('bootstrapTaskList renders filtered tasks and action buttons', async () => 
     },
   };
 
-  await bootstrapTaskList({ document, client });
+  const taskList = bootstrapTaskList({ document, client });
+  await taskList.fetchTasks();
   assert.match(nodes['[data-task-list]'].innerHTML, /Ship filters/);
-  assert.match(nodes['[data-task-list]'].innerHTML, /Open/);
+  assert.match(nodes['[data-task-list]'].innerHTML, /打开详情/);
   assert.doesNotMatch(nodes['[data-task-list]'].innerHTML, /Other task/);
-  assert.match(nodes['[data-task-summary]'].innerHTML, /总计 1/);
+  assert.match(nodes['[data-task-summary]'].innerHTML, /总计 2\/5/);
+  assert.match(nodes['[data-task-summary]'].innerHTML, /阻塞 0\/1/);
+  assert.match(nodes['[data-task-summary]'].innerHTML, /已完成 0\/1/);
+});
+
+test('bootstrapTaskList normalizes ready blocked and archived statuses', () => {
+  const clientSource = readFileSync('/root/autodl-tmp/projects/hermes-swarm-lab/frontend/api.js', 'utf8');
+  assert.match(clientSource, /function normalizeTaskStatus/);
+  assert.match(clientSource, /\['ready', 'pending'\]/);
+  assert.match(clientSource, /\['blocked', 'block'\]/);
+  assert.match(clientSource, /\['archived', 'archive'\]/);
+  assert.match(clientSource, /const statusMap = \{ ready: '待领取', running: '进行中', blocked: '阻塞', done: '已完成', archived: '已归档', unknown: '未知' \};/);
 });
 
 test('bootstrapTaskList falls back to empty state when no task list node is present', async () => {
@@ -198,8 +253,49 @@ test('bootstrapTaskList falls back to empty state when no task list node is pres
     },
   };
 
-  const result = await bootstrapTaskList({ document, client });
-  assert.deepEqual(result, []);
+  const result = bootstrapTaskList({ document, client });
+  assert.equal(result, null);
 });
 
+test('activity waterfall includes heatmap and combination filter controls', () => {
+  const html = readFileSync('/root/autodl-tmp/projects/hermes-swarm-lab/frontend/index.html', 'utf8');
+
+  assert.match(html, /data-activity-heatmap/);
+  assert.match(html, /data-activity-filter-group="distance"/);
+  assert.match(html, /data-activity-filter-group="pace"/);
+  assert.match(html, /data-activity-filter-group="campus"/);
+  assert.match(html, /data-activity-filter-group="month"/);
+  assert.match(html, /activity-filter-rail/);
+});
+
+test('activity waterfall gracefully normalizes missing heatmap fields', () => {
+  const source = readFileSync('/root/autodl-tmp/projects/hermes-swarm-lab/frontend/activity-waterfall.js', 'utf8');
+
+  assert.match(source, /function normalizeCampus/);
+  assert.match(source, /return "未标注";/);
+  assert.match(source, /function normalizeMonth/);
+  assert.match(source, /function buildHeatmapSummary/);
+  assert.match(source, /function filterActivities/);
+  assert.match(source, /distanceBucket/);
+  assert.match(source, /paceBucket/);
+});
+
+test('challenge leaderboard documents four empty and low-data states', () => {
+  const html = readFileSync('/root/autodl-tmp/projects/hermes-swarm-lab/frontend/index.html', 'utf8');
+  const source = readFileSync('/root/autodl-tmp/projects/hermes-swarm-lab/frontend/challenge-leaderboard.js', 'utf8');
+
+  assert.match(html, /data-challenge-leaderboard/);
+  assert.match(html, /data-challenge-scenario="noChallenges"/);
+  assert.match(html, /data-challenge-scenario="noScores"/);
+  assert.match(html, /data-challenge-scenario="importFailed"/);
+  assert.match(html, /data-challenge-scenario="notRegistered"/);
+  assert.match(source, /暂无校园挑战赛/);
+  assert.match(source, /挑战赛已开启，暂无成绩/);
+  assert.match(source, /成绩导入失败/);
+  assert.match(source, /你还未报名本次挑战赛/);
+  assert.match(source, /降级展示/);
+  assert.match(source, /data-challenge-retry/);
+});
+
+await Promise.all(pendingTests);
 console.log('frontend helper tests complete');

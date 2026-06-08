@@ -1,24 +1,36 @@
-FROM python:3.12-slim
+FROM python:3.12.4-slim-bookworm AS builder
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
-    RUNNING_CLUB_DB_PATH=/data/running_club.db
+    PIP_DISABLE_PIP_VERSION_CHECK=1
 
 WORKDIR /app
 
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends build-essential curl \
-    && rm -rf /var/lib/apt/lists/*
-
 COPY requirements.txt ./
-RUN pip install --upgrade pip \
-    && pip install -r requirements.txt
+RUN python -m venv /opt/venv \
+    && /opt/venv/bin/pip install --upgrade pip==24.2 \
+    && /opt/venv/bin/pip install -r requirements.txt
 
-COPY . .
+FROM python:3.12.4-slim-bookworm AS runtime
 
-RUN chmod +x /app/scripts/start.sh
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PATH="/opt/venv/bin:${PATH}" \
+    PORT=8000 \
+    RUNNING_CLUB_HOST=0.0.0.0 \
+    RUNNING_CLUB_PORT=8000
+
+WORKDIR /app
+
+RUN useradd --create-home --uid 1000 --shell /bin/bash appuser
+
+COPY --from=builder /opt/venv /opt/venv
+COPY . /app
+
+RUN chown -R appuser:appuser /app
 
 EXPOSE 8000
+USER appuser
 
-CMD ["/app/scripts/start.sh"]
+CMD ["uvicorn", "backend.app:app", "--host", "0.0.0.0", "--port", "8000"]

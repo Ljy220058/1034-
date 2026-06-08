@@ -30,7 +30,7 @@ def test_workspace_scoped_task_specs_have_valid_kanban_payloads() -> None:
 
 
 def test_workspace_scoped_task_creation_endpoint_returns_two_payloads() -> None:
-    response = client.post('/api/v1/tasks/workspace-scoped-creation-helper')
+    response = client.post('/api/v1/workspaces/tasks/items')
 
     assert response.status_code == 200
     payload = response.json()

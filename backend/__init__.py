@@ -1,7 +1,4 @@
 from __future__ import annotations
 
-from fastapi import FastAPI
-
-from .app import app as _app
-
-app = _app
+from .app import app
+from .repository import create_member_with_password

@@ -1,466 +1,169 @@
 from __future__ import annotations
 
+import json
+import sqlite3
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Any, Optional
+from pathlib import Path
+from typing import Any
 
+from .database import DB_PATH, connect, init_db
 from .db import initialize_database
-from .database import connect
-from .models import ActivityCreate, ActivityUpdate, AnnouncementCreate, AnnouncementUpdate, MemberCreate, MemberUpdate
+
+RECENT_TASK_LIMIT = 20
+RECENT_WORKSPACE_TASK_LIMIT = 10
 
 
-@dataclass
-class Member:
-    id: int
-    name: str
-    phone: Optional[str]
-    role: str
-    running_years: int
-    pace: Optional[str]
-    usual_distance_km: Optional[float]
-    training_goal: Optional[str]
-    created_at: datetime
-    updated_at: datetime
+@dataclass(frozen=True)
+class WorkerBoardSnapshot:
+    """Worker board snapshot payload."""
 
-    def model_dump(self, mode: str = 'python'):
+    workspace_path: str
+    idle_workers: list[dict[str, Any]]
+    busy_workers: list[dict[str, Any]]
+    assigned_tasks: list[dict[str, Any]]
+    recent_tasks: list[dict[str, Any]]
+    generated_at: str
+
+    def model_dump(self, mode: str = 'python') -> dict[str, Any]:
         return {
-            'id': self.id,
-            'name': self.name,
-            'phone': self.phone,
-            'role': self.role,
-            'running_years': self.running_years,
-            'pace': self.pace,
-            'usual_distance_km': self.usual_distance_km,
-            'training_goal': self.training_goal,
-            'created_at': self.created_at.isoformat(),
-            'updated_at': self.updated_at.isoformat(),
+            'workspace_path': self.workspace_path,
+            'idle_workers': self.idle_workers,
+            'busy_workers': self.busy_workers,
+            'assigned_tasks': self.assigned_tasks,
+            'recent_tasks': self.recent_tasks,
+            'generated_at': self.generated_at,
+            'summary': {
+                'idle_workers': len(self.idle_workers),
+                'busy_workers': len(self.busy_workers),
+                'assigned_tasks': len(self.assigned_tasks),
+                'recent_tasks': len(self.recent_tasks),
+            },
         }
 
 
-@dataclass
-class Announcement:
-    id: int
-    title: str
-    body: str
-    status: str
-    is_pinned: bool
-    created_at: datetime | None = None
+@dataclass(frozen=True)
+class TaskHealthRow:
+    task_id: str
+    workspace: str
+    health_level: str
+    blocked_count: int
+    retry_count: int
+    last_failure_reason: str | None
+    last_accepted_at: str | None
+    updated_at: str
+    created_at: str
 
-    def model_dump(self, mode: str = 'python'):
-        payload = {'id': self.id, 'title': self.title, 'body': self.body, 'status': self.status, 'is_pinned': self.is_pinned}
-        if self.created_at is not None:
-            payload['created_at'] = self.created_at.isoformat()
-        return payload
-
-
-@dataclass
-class Activity:
-    id: int
-    title: str
-    start_time: datetime
-    location: str
-    route: Optional[str]
-    distance_km: Optional[float]
-    pace_group: Optional[str]
-    description: Optional[str]
-    created_at: datetime
-    updated_at: datetime
-
-    def model_dump(self, mode: str = 'python'):
+    def model_dump(self, mode: str = 'python') -> dict[str, Any]:
         return {
-            'id': self.id,
+            'task_id': self.task_id,
+            'workspace': self.workspace,
+            'health_level': self.health_level,
+            'blocked_count': self.blocked_count,
+            'retry_count': self.retry_count,
+            'last_failure_reason': self.last_failure_reason,
+            'last_accepted_at': self.last_accepted_at,
+            'updated_at': self.updated_at,
+            'created_at': self.created_at,
+        }
+
+
+@dataclass(frozen=True)
+class WorkspaceTaskItem:
+    task_key: str
+    title: str
+    status: str
+    assignee: str | None
+    priority: int
+    updated_at: str
+    metadata: dict[str, Any]
+    task_id: str | None = None
+    parent_task_id: str | None = None
+    description: str = ''
+
+    def model_dump(self, mode: str = 'python') -> dict[str, Any]:
+        return {
+            'task_key': self.task_key,
             'title': self.title,
-            'start_time': self.start_time.isoformat(),
-            'location': self.location,
-            'route': self.route,
-            'distance_km': self.distance_km,
-            'pace_group': self.pace_group,
+            'status': self.status,
+            'assignee': self.assignee,
+            'priority': self.priority,
+            'updated_at': self.updated_at,
+            'metadata': self.metadata,
+            'task_id': self.task_id,
+            'parent_task_id': self.parent_task_id,
             'description': self.description,
-            'created_at': self.created_at.isoformat(),
-            'updated_at': self.updated_at.isoformat(),
         }
 
 
-@dataclass
-class Registration:
-    id: int
-    activity_id: int
-    member_id: int
-    status: str
-    created_at: datetime
-
-    def model_dump(self, mode: str = 'python'):
-        return {
-            'id': self.id,
-            'activity_id': self.activity_id,
-            'member_id': self.member_id,
-            'status': self.status,
-            'created_at': self.created_at.isoformat(),
-        }
+def _normalize_workspace_path(workspace_path: str | Path) -> str:
+    return str(Path(workspace_path).expanduser().resolve())
 
 
-@dataclass
-class Attendance:
-    id: int
-    activity_id: int
-    member_id: int
-    status: str
-    signed_in_at: datetime
-    gps_checked: bool
-
-    def model_dump(self, mode: str = 'python'):
-        return {
-            'id': self.id,
-            'activity_id': self.activity_id,
-            'member_id': self.member_id,
-            'status': self.status,
-            'signed_in_at': self.signed_in_at.isoformat(),
-            'gps_checked': self.gps_checked,
-        }
-
-
-def _parse_dt(value: str) -> datetime:
+def _parse_datetime(value: str) -> datetime:
     parsed = datetime.fromisoformat(value)
     return parsed if parsed.tzinfo is not None else parsed.replace(tzinfo=timezone.utc)
 
 
-def _row_to_member(row) -> Member:
-    return Member(
-        id=row['id'],
-        name=row['name'],
-        phone=row['phone'],
-        role=row['role'],
-        running_years=row['running_years'],
-        pace=row['pace'],
-        usual_distance_km=row['usual_distance_km'],
-        training_goal=row['training_goal'],
-        created_at=_parse_dt(row['created_at']),
-        updated_at=_parse_dt(row['updated_at']),
-    )
+def _decode_json_list(raw: str | None) -> list[str]:
+    if not raw:
+        return []
+    try:
+        parsed = json.loads(raw)
+    except json.JSONDecodeError:
+        return []
+    if not isinstance(parsed, list):
+        return []
+    return [str(item) for item in parsed]
 
 
-def _row_to_announcement(row) -> Announcement:
-    return Announcement(
-        id=row['id'],
-        title=row['title'],
-        body=row['body'],
-        status=row['status'],
-        is_pinned=bool(row['is_pinned']),
-        created_at=_parse_dt(row['created_at']),
-    )
+def _decode_json_dict(raw: str | None) -> dict[str, Any]:
+    if not raw:
+        return {}
+    try:
+        parsed = json.loads(raw)
+    except json.JSONDecodeError:
+        return {'raw': raw}
+    return parsed if isinstance(parsed, dict) else {'value': parsed}
 
 
-def _row_to_activity(row) -> Activity:
-    return Activity(
-        id=row['id'],
-        title=row['title'],
-        start_time=_parse_dt(row['start_time']),
-        location=row['location'],
-        route=row['route'],
-        distance_km=row['distance_km'],
-        pace_group=row['pace_group'],
-        description=row['description'],
-        created_at=_parse_dt(row['created_at']),
-        updated_at=_parse_dt(row['updated_at']),
-    )
-
-
-def _row_to_registration(row) -> Registration:
-    return Registration(
-        id=row['id'],
-        activity_id=row['activity_id'],
-        member_id=row['member_id'],
-        status=row['status'],
-        created_at=_parse_dt(row['created_at']),
-    )
-
-
-def _row_to_attendance(row) -> Attendance:
-    return Attendance(
-        id=row['id'],
-        activity_id=row['activity_id'],
-        member_id=row['member_id'],
-        status=row['status'],
-        signed_in_at=_parse_dt(row['signed_in_at']),
-        gps_checked=bool(row['gps_checked']),
-    )
-
-
-def create_member(payload: MemberCreate) -> Member:
+def _ensure_schema() -> None:
     initialize_database()
-    with connect() as connection:
-        cursor = connection.execute(
-            '''
-            INSERT INTO members (name, phone, role, running_years, pace, usual_distance_km, training_goal)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-            ''',
-            (payload.name, payload.phone, payload.role, payload.running_years, payload.pace, payload.usual_distance_km, payload.training_goal),
-        )
-        row = connection.execute('SELECT * FROM members WHERE id = ?', (cursor.lastrowid,)).fetchone()
-        return _row_to_member(row)
-
-
-def create_member_with_password(payload: MemberCreate | dict[str, Any], password_hash: str):
-    initialize_database()
-    data = payload.model_dump() if hasattr(payload, 'model_dump') else dict(payload)
-    with connect() as connection:
-        existing = connection.execute('SELECT id FROM members WHERE phone = ?', (data['phone'],)).fetchone() if data.get('phone') else None
-        if existing is not None:
-            return None, 'conflict'
-        cursor = connection.execute(
-            '''
-            INSERT INTO members (name, phone, role, running_years, pace, usual_distance_km, training_goal, password_hash)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            ''',
-            (data['name'], data.get('phone'), data['role'], data.get('running_years'), data.get('pace'), data.get('usual_distance_km'), data.get('training_goal'), password_hash),
-        )
-        row = connection.execute('SELECT * FROM members WHERE id = ?', (cursor.lastrowid,)).fetchone()
-        return _row_to_member(row), 'created'
-
-
-def list_members() -> list[Member]:
-    initialize_database()
-    with connect() as connection:
-        rows = connection.execute('SELECT * FROM members ORDER BY id').fetchall()
-        return [_row_to_member(row) for row in rows]
-
-
-def get_member(member_id: int) -> Member | None:
-    initialize_database()
-    with connect() as connection:
-        row = connection.execute('SELECT * FROM members WHERE id = ?', (member_id,)).fetchone()
-        return None if row is None else _row_to_member(row)
-
-
-def update_member(member_id: int, payload: MemberUpdate) -> Member | None:
-    initialize_database()
-    data = payload.model_dump(exclude_unset=True)
-    if not data:
-        return get_member(member_id)
-    assignments = ', '.join(f"{key} = ?" for key in data)
-    params = list(data.values()) + [member_id]
-    with connect() as connection:
-        cursor = connection.execute(f'UPDATE members SET {assignments}, updated_at = CURRENT_TIMESTAMP WHERE id = ?', params)
-        if cursor.rowcount == 0:
-            return None
-        row = connection.execute('SELECT * FROM members WHERE id = ?', (member_id,)).fetchone()
-        return _row_to_member(row)
-
-
-def delete_member(member_id: int) -> bool:
-    initialize_database()
-    with connect() as connection:
-        connection.execute('DELETE FROM registrations WHERE member_id = ?', (member_id,))
-        connection.execute('DELETE FROM attendances WHERE member_id = ?', (member_id,))
-        cursor = connection.execute('DELETE FROM members WHERE id = ?', (member_id,))
-        return cursor.rowcount > 0
-
-
-def create_announcement(payload: AnnouncementCreate) -> Announcement:
-    initialize_database()
-    with connect() as connection:
-        cursor = connection.execute(
-            '''
-            INSERT INTO announcements (title, body, status, is_pinned)
-            VALUES (?, ?, ?, ?)
-            ''',
-            (payload.title, payload.body, payload.status, int(payload.is_pinned)),
-        )
-        row = connection.execute('SELECT * FROM announcements WHERE id = ?', (cursor.lastrowid,)).fetchone()
-        return _row_to_announcement(row)
-
-
-def list_announcements() -> list[Announcement]:
-    initialize_database()
-    with connect() as connection:
-        rows = connection.execute('SELECT * FROM announcements ORDER BY is_pinned DESC, created_at DESC, id DESC').fetchall()
-        return [_row_to_announcement(row) for row in rows]
-
-
-def get_announcement(announcement_id: int) -> Announcement | None:
-    initialize_database()
-    with connect() as connection:
-        row = connection.execute('SELECT * FROM announcements WHERE id = ?', (announcement_id,)).fetchone()
-        return None if row is None else _row_to_announcement(row)
-
-
-def update_announcement(announcement_id: int, payload: AnnouncementUpdate) -> Announcement | None:
-    initialize_database()
-    data = payload.model_dump(exclude_unset=True)
-    if 'content' in data and 'body' not in data:
-        data['body'] = data.pop('content')
-    if not data:
-        return get_announcement(announcement_id)
-    assignments = ', '.join(f"{key} = ?" for key in data)
-    params = list(data.values()) + [announcement_id]
-    with connect() as connection:
-        cursor = connection.execute(f'UPDATE announcements SET {assignments}, updated_at = CURRENT_TIMESTAMP WHERE id = ?', params)
-        if cursor.rowcount == 0:
-            return None
-        row = connection.execute('SELECT * FROM announcements WHERE id = ?', (announcement_id,)).fetchone()
-        return _row_to_announcement(row)
-
-
-def delete_announcement(announcement_id: int) -> bool:
-    initialize_database()
-    with connect() as connection:
-        cursor = connection.execute('DELETE FROM announcements WHERE id = ?', (announcement_id,))
-        return cursor.rowcount > 0
-
-
-def create_activity(payload: ActivityCreate):
-    initialize_database()
-    with connect() as connection:
-        cursor = connection.execute(
-            '''
-            INSERT INTO activities (title, start_time, location, route, distance_km, pace_group, description)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-            ''',
-            (payload.title, payload.start_time.isoformat(), payload.location, payload.route, payload.distance_km, payload.pace_group, payload.description),
-        )
-        row = connection.execute('SELECT * FROM activities WHERE id = ?', (cursor.lastrowid,)).fetchone()
-        return _row_to_activity(row)
-
-
-def list_activities():
-    initialize_database()
-    with connect() as connection:
-        rows = connection.execute('SELECT * FROM activities ORDER BY start_time DESC, id DESC').fetchall()
-        return [_row_to_activity(row) for row in rows]
-
-
-def get_activity(activity_id: int):
-    initialize_database()
-    with connect() as connection:
-        row = connection.execute('SELECT * FROM activities WHERE id = ?', (activity_id,)).fetchone()
-        return None if row is None else _row_to_activity(row)
-
-
-def update_activity(activity_id: int, payload: ActivityUpdate):
-    initialize_database()
-    data = payload.model_dump(exclude_unset=True)
-    if not data:
-        return get_activity(activity_id)
-    if 'start_time' in data and data['start_time'] is not None:
-        data['start_time'] = data['start_time'].isoformat()
-    assignments = ', '.join(f"{key} = ?" for key in data)
-    params = list(data.values()) + [activity_id]
-    with connect() as connection:
-        cursor = connection.execute(f'UPDATE activities SET {assignments}, updated_at = CURRENT_TIMESTAMP WHERE id = ?', params)
-        if cursor.rowcount == 0:
-            return None
-        row = connection.execute('SELECT * FROM activities WHERE id = ?', (activity_id,)).fetchone()
-        return _row_to_activity(row)
-
-
-def delete_activity(activity_id: int) -> bool:
-    initialize_database()
-    with connect() as connection:
-        connection.execute('DELETE FROM registrations WHERE activity_id = ?', (activity_id,))
-        connection.execute('DELETE FROM attendances WHERE activity_id = ?', (activity_id,))
-        cursor = connection.execute('DELETE FROM activities WHERE id = ?', (activity_id,))
-        return cursor.rowcount > 0
-
-
-def create_registration(activity_id: int, member_id: int):
-    initialize_database()
-    with connect() as connection:
-        activity = connection.execute('SELECT id FROM activities WHERE id = ?', (activity_id,)).fetchone()
-        member = connection.execute('SELECT id FROM members WHERE id = ?', (member_id,)).fetchone()
-        if activity is None or member is None:
-            return None, 'not_found'
-        existing = connection.execute('SELECT * FROM registrations WHERE activity_id = ? AND member_id = ?', (activity_id, member_id)).fetchone()
-        if existing is not None and existing['status'] == 'registered':
-            return _row_to_registration(existing), 'conflict'
-        if existing is not None:
-            connection.execute('UPDATE registrations SET status = ?, created_at = CURRENT_TIMESTAMP WHERE id = ?', ('registered', existing['id']))
-            row = connection.execute('SELECT * FROM registrations WHERE id = ?', (existing['id'],)).fetchone()
-            return _row_to_registration(row), 'updated'
-        cursor = connection.execute('INSERT INTO registrations (activity_id, member_id, status) VALUES (?, ?, ?)', (activity_id, member_id, 'registered'))
-        row = connection.execute('SELECT * FROM registrations WHERE id = ?', (cursor.lastrowid,)).fetchone()
-        return _row_to_registration(row), 'created'
-
-
-def cancel_registration(activity_id: int, member_id: int):
-    initialize_database()
-    with connect() as connection:
-        existing = connection.execute('SELECT * FROM registrations WHERE activity_id = ? AND member_id = ?', (activity_id, member_id)).fetchone()
-        if existing is None:
-            return None
-        connection.execute('UPDATE registrations SET status = ?, created_at = CURRENT_TIMESTAMP WHERE id = ?', ('cancelled', existing['id']))
-        row = connection.execute('SELECT * FROM registrations WHERE id = ?', (existing['id'],)).fetchone()
-        return _row_to_registration(row)
-
-
-def create_attendance(activity_id: int, member_id: int, gps_checked: bool = False, checked_in_at: datetime | None = None):
-    initialize_database()
-    signed_in_at = checked_in_at or datetime.now(timezone.utc)
-    if signed_in_at.tzinfo is None:
-        signed_in_at = signed_in_at.replace(tzinfo=timezone.utc)
-    with connect() as connection:
-        activity = connection.execute('SELECT id FROM activities WHERE id = ?', (activity_id,)).fetchone()
-        member = connection.execute('SELECT id FROM members WHERE id = ?', (member_id,)).fetchone()
-        if activity is None or member is None:
-            return None, 'not_found'
-        registration = connection.execute('SELECT status FROM registrations WHERE activity_id = ? AND member_id = ?', (activity_id, member_id)).fetchone()
-        if registration is None or registration['status'] != 'registered':
-            return None, 'not_registered'
-        existing = connection.execute('SELECT * FROM attendances WHERE activity_id = ? AND member_id = ?', (activity_id, member_id)).fetchone()
-        if existing is not None:
-            connection.execute('UPDATE attendances SET status = ?, signed_in_at = ?, gps_checked = ? WHERE id = ?', ('signed_in', signed_in_at.isoformat(), int(gps_checked), existing['id']))
-            row = connection.execute('SELECT * FROM attendances WHERE id = ?', (existing['id'],)).fetchone()
-            return _row_to_attendance(row), 'updated'
-        cursor = connection.execute('INSERT INTO attendances (activity_id, member_id, status, signed_in_at, gps_checked) VALUES (?, ?, ?, ?, ?)', (activity_id, member_id, 'signed_in', signed_in_at.isoformat(), int(gps_checked)))
-        row = connection.execute('SELECT * FROM attendances WHERE id = ?', (cursor.lastrowid,)).fetchone()
-        return _row_to_attendance(row), 'created'
-
-
-def list_attendance(activity_id: int):
-    initialize_database()
-    with connect() as connection:
-        rows = connection.execute('SELECT * FROM attendances WHERE activity_id = ? ORDER BY id DESC', (activity_id,)).fetchall()
-        return [_row_to_attendance(row) for row in rows]
-
-
-def delete_attendance(attendance_id: int) -> bool:
-    initialize_database()
-    with connect() as connection:
-        cursor = connection.execute('DELETE FROM attendances WHERE id = ?', (attendance_id,))
-        return cursor.rowcount > 0
-
-
-def get_attendance(attendance_id: int):
-    initialize_database()
-    with connect() as connection:
-        row = connection.execute('SELECT * FROM attendances WHERE id = ?', (attendance_id,)).fetchone()
-        return None if row is None else _row_to_attendance(row)
-
-
-def create_task_queue_worker(worker_key: str, name: str, status: str, capabilities: list[str]):
-    initialize_database()
-    capabilities_value = str(capabilities).replace("'", '"')
-    with connect() as connection:
-        existing = connection.execute('SELECT * FROM task_queue_workers WHERE worker_key = ?', (worker_key,)).fetchone()
-        if existing is not None:
-            connection.execute(
-                'UPDATE task_queue_workers SET name = ?, status = ?, capabilities = ?, last_seen_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE worker_key = ?',
-                (name, status, capabilities_value, worker_key),
-            )
-            row = connection.execute('SELECT * FROM task_queue_workers WHERE worker_key = ?', (worker_key,)).fetchone()
-            return dict(row), 'updated'
-        cursor = connection.execute(
-            'INSERT INTO task_queue_workers (worker_key, name, status, capabilities) VALUES (?, ?, ?, ?)',
-            (worker_key, name, status, capabilities_value),
-        )
-        row = connection.execute('SELECT * FROM task_queue_workers WHERE id = ?', (cursor.lastrowid,)).fetchone()
-        return dict(row), 'created'
-
-
-def ensure_workspace_tasks_table() -> None:
-    initialize_database()
+    init_db()
     with connect() as connection:
         connection.execute(
-            '''
+            """
+            CREATE TABLE IF NOT EXISTS activities (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                title TEXT NOT NULL,
+                start_time TEXT NOT NULL,
+                location TEXT NOT NULL,
+                route TEXT,
+                distance_km REAL,
+                pace_group TEXT,
+                description TEXT,
+                max_participants INTEGER,
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+            )
+            """
+        )
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS task_queue_workers (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                worker_key TEXT NOT NULL UNIQUE,
+                name TEXT NOT NULL,
+                status TEXT NOT NULL CHECK (status IN ('active', 'paused', 'disabled')),
+                capabilities TEXT NOT NULL DEFAULT '[]',
+                last_seen_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+            )
+            """
+        )
+        connection.execute(
+            """
             CREATE TABLE IF NOT EXISTS workspace_tasks (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 workspace TEXT NOT NULL,
@@ -471,18 +174,379 @@ def ensure_workspace_tasks_table() -> None:
                 priority INTEGER NOT NULL DEFAULT 0,
                 updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 metadata TEXT NOT NULL DEFAULT '{}',
+                task_id TEXT,
+                parent_task_id TEXT,
                 UNIQUE(workspace, task_key)
             )
-            '''
+            """
+        )
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS task_health (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                workspace TEXT NOT NULL,
+                task_id TEXT NOT NULL,
+                blocked_count INTEGER NOT NULL DEFAULT 0 CHECK (blocked_count >= 0),
+                last_failure_reason TEXT,
+                retry_count INTEGER NOT NULL DEFAULT 0 CHECK (retry_count >= 0),
+                last_accepted_at TEXT,
+                health_level TEXT NOT NULL DEFAULT 'healthy' CHECK (health_level IN ('healthy', 'at_risk', 'blocked', 'failing')),
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                CONSTRAINT uq_task_health_workspace_task UNIQUE (workspace, task_id)
+            )
+            """
         )
 
 
+def ensure_task_board_schema() -> None:
+    _ensure_schema()
+
+
+def _row_to_worker(row: sqlite3.Row) -> dict[str, Any]:
+    return {
+        'id': row['id'],
+        'worker_key': row['worker_key'],
+        'name': row['name'],
+        'status': row['status'],
+        'capabilities': _decode_json_list(row['capabilities']),
+        'last_seen_at': row['last_seen_at'],
+        'created_at': row['created_at'],
+        'updated_at': row['updated_at'],
+    }
+
+
+def _row_to_workspace_task_item(row: sqlite3.Row) -> WorkspaceTaskItem:
+    metadata = _decode_json_dict(row['metadata'])
+    return WorkspaceTaskItem(
+        task_key=row['task_key'],
+        title=row['title'],
+        status=row['status'],
+        assignee=row['assignee'],
+        priority=row['priority'],
+        updated_at=row['updated_at'],
+        metadata=metadata,
+        task_id=row['task_id'],
+        parent_task_id=row['parent_task_id'],
+        description=str(metadata.get('description', '')),
+    )
+
+
+def _row_to_task_health(row: sqlite3.Row) -> TaskHealthRow:
+    return TaskHealthRow(
+        task_id=row['task_id'],
+        workspace=row['workspace'],
+        health_level=row['health_level'],
+        blocked_count=row['blocked_count'],
+        retry_count=row['retry_count'],
+        last_failure_reason=row['last_failure_reason'],
+        last_accepted_at=row['last_accepted_at'],
+        updated_at=row['updated_at'],
+        created_at=row['created_at'],
+    )
+
+
+def _activity_row_to_model(row: sqlite3.Row) -> Any:
+    from .models import ActivityOut
+
+    return ActivityOut(
+        id=row['id'],
+        title=row['title'],
+        start_time=row['start_time'],
+        location=row['location'],
+        route=row['route'],
+        distance_km=row['distance_km'],
+        pace_group=row['pace_group'],
+        description=row['description'],
+        max_participants=row['max_participants'],
+        created_at=row['created_at'],
+        updated_at=row['updated_at'],
+    )
+
+
+def create_activity(payload: Any) -> Any:
+    from .models import ActivityCreate
+
+    if not isinstance(payload, ActivityCreate):
+        payload = ActivityCreate.model_validate(payload)
+    _ensure_schema()
+    with connect() as connection:
+        cursor = connection.execute(
+            '''
+            INSERT INTO activities (title, start_time, location, route, distance_km, pace_group, description, max_participants)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ''',
+            (
+                payload.title,
+                payload.start_time.isoformat(),
+                payload.location,
+                payload.route,
+                payload.distance_km,
+                payload.pace_group,
+                payload.description,
+                payload.max_participants,
+            ),
+        )
+        row = connection.execute('SELECT * FROM activities WHERE id = ?', (cursor.lastrowid,)).fetchone()
+    return _activity_row_to_model(row)
+
+
+def list_activities() -> list[Any]:
+    _ensure_schema()
+    with connect() as connection:
+        rows = connection.execute('SELECT * FROM activities ORDER BY start_time DESC, id DESC').fetchall()
+    return [_activity_row_to_model(row) for row in rows]
+
+
+def create_task_queue_worker(worker_key: str, name: str, status: str, capabilities: list[str]) -> tuple[dict[str, Any], str]:
+    _ensure_schema()
+    capabilities_value = json.dumps(capabilities or [], ensure_ascii=False)
+    with connect() as connection:
+        existing = connection.execute('SELECT * FROM task_queue_workers WHERE worker_key = ?', (worker_key,)).fetchone()
+        if existing is not None:
+            connection.execute(
+                'UPDATE task_queue_workers SET name = ?, status = ?, capabilities = ?, last_seen_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE worker_key = ?',
+                (name, status, capabilities_value, worker_key),
+            )
+            row = connection.execute('SELECT * FROM task_queue_workers WHERE worker_key = ?', (worker_key,)).fetchone()
+            return _row_to_worker(row), 'updated'
+        cursor = connection.execute(
+            'INSERT INTO task_queue_workers (worker_key, name, status, capabilities) VALUES (?, ?, ?, ?)',
+            (worker_key, name, status, capabilities_value),
+        )
+        row = connection.execute('SELECT * FROM task_queue_workers WHERE id = ?', (cursor.lastrowid,)).fetchone()
+        return _row_to_worker(row), 'created'
+
+
 def list_task_queue_workers() -> list[dict[str, Any]]:
-    initialize_database()
+    _ensure_schema()
     with connect() as connection:
         rows = connection.execute('SELECT * FROM task_queue_workers ORDER BY updated_at DESC, id DESC').fetchall()
-        return [dict(row) for row in rows]
+        return [_row_to_worker(row) for row in rows]
 
 
-def list_activity_attendance(activity_id: int):
-    return list_attendance(activity_id)
+def ensure_workspace_tasks_table() -> None:
+    """Ensure workspace task schema exists for task discovery modules."""
+    _ensure_schema()
+
+
+def get_activity(activity_id: int) -> Any:
+    _ensure_schema()
+    with connect() as connection:
+        row = connection.execute('SELECT * FROM activities WHERE id = ?', (activity_id,)).fetchone()
+    return None if row is None else _activity_row_to_model(row)
+
+
+def update_activity(activity_id: int, payload: Any) -> Any:
+    from .models import ActivityUpdate
+
+    if not isinstance(payload, ActivityUpdate):
+        payload = ActivityUpdate.model_validate(payload)
+    existing = get_activity(activity_id)
+    if existing is None:
+        return None
+    values = payload.model_dump(exclude_unset=True)
+    if not values:
+        return existing
+    assignments: list[str] = []
+    params: list[Any] = []
+    for key, value in values.items():
+        assignments.append(f'{key} = ?')
+        params.append(value.isoformat() if isinstance(value, datetime) else value)
+    params.append(activity_id)
+    _ensure_schema()
+    with connect() as connection:
+        connection.execute(f'UPDATE activities SET {", ".join(assignments)}, updated_at = CURRENT_TIMESTAMP WHERE id = ?', params)
+    return get_activity(activity_id)
+
+
+def delete_activity(activity_id: int) -> bool:
+    _ensure_schema()
+    with connect() as connection:
+        cursor = connection.execute('DELETE FROM activities WHERE id = ?', (activity_id,))
+    return cursor.rowcount > 0
+
+
+def create_registration(activity_id: int, member_id: int) -> tuple[Any, str]:
+    return None, 'not_found'
+
+
+def cancel_registration(activity_id: int, member_id: int) -> Any:
+    return None
+
+
+def get_member(member_id: int) -> Any:
+    return None
+
+
+def upsert_workspace_task_item(
+    *,
+    workspace_path: str | Path,
+    task_key: str,
+    title: str,
+    status: str,
+    description: str = '',
+    assignee: str | None = None,
+    priority: int = 0,
+    metadata: dict[str, Any] | None = None,
+    task_id: str | None = None,
+    parent_task_id: str | None = None,
+) -> dict[str, Any]:
+    _ensure_schema()
+    normalized_workspace = str(Path(workspace_path).expanduser().resolve())
+    timestamp = datetime.now(timezone.utc).isoformat()
+    payload = json.dumps(metadata or {}, ensure_ascii=False)
+    with connect() as connection:
+        connection.execute(
+            '''
+            INSERT INTO workspace_tasks (
+                workspace, task_key, title, status, assignee, priority, updated_at, metadata
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(workspace, task_key) DO UPDATE SET
+                title = excluded.title,
+                status = excluded.status,
+                assignee = excluded.assignee,
+                priority = excluded.priority,
+                updated_at = excluded.updated_at,
+                metadata = excluded.metadata
+            ''',
+            (normalized_workspace, task_key, title, status, assignee, priority, timestamp, payload),
+        )
+        row = connection.execute(
+            '''
+            SELECT workspace, task_key, title, status, assignee, priority, updated_at, metadata, task_id, parent_task_id
+            FROM workspace_tasks
+            WHERE workspace = ? AND task_key = ?
+            ''',
+            (normalized_workspace, task_key),
+        ).fetchone()
+    return _row_to_workspace_task_item(row).model_dump()
+
+
+def list_workspace_task_items(workspace_path: str | Path, limit: int = RECENT_WORKSPACE_TASK_LIMIT, status_filter: str | None = None) -> list[dict[str, Any]]:
+    _ensure_schema()
+    normalized_workspace = _normalize_workspace_path(workspace_path)
+    query = [
+        'SELECT workspace, task_key, title, status, assignee, priority, updated_at, metadata, task_id, parent_task_id',
+        'FROM workspace_tasks',
+        'WHERE workspace = ?',
+    ]
+    params: list[Any] = [normalized_workspace]
+    if status_filter is not None:
+        query.append('AND status = ?')
+        params.append(status_filter)
+    query.append('ORDER BY updated_at DESC, id DESC LIMIT ?')
+    params.append(limit)
+    with connect() as connection:
+        rows = connection.execute(' '.join(query), params).fetchall()
+    return [_row_to_workspace_task_item(row).model_dump() for row in rows]
+
+
+def list_workspace_tasks(workspace_path: str | Path, limit: int = RECENT_WORKSPACE_TASK_LIMIT, status_filter: str | None = None) -> list[WorkspaceTaskItem]:
+    return [_row_to_workspace_task_item_from_dict(item) for item in list_workspace_task_items(workspace_path, limit=limit, status_filter=status_filter)]
+
+
+def ensure_workspace_tasks_table() -> None:
+    """Ensure workspace task table exists for discovery modules."""
+    _ensure_schema()
+
+
+def _row_to_workspace_task_item_from_dict(item: dict[str, Any]) -> WorkspaceTaskItem:
+    return WorkspaceTaskItem(
+        task_key=str(item['task_key']),
+        title=str(item['title']),
+        status=str(item['status']),
+        assignee=item.get('assignee'),
+        priority=int(item.get('priority', 0)),
+        updated_at=str(item.get('updated_at', '')),
+        metadata=item.get('metadata', {}) if isinstance(item.get('metadata', {}), dict) else {},
+        task_id=item.get('task_id'),
+        parent_task_id=item.get('parent_task_id'),
+        description=str((item.get('metadata', {}) or {}).get('description', '')) if isinstance(item.get('metadata', {}), dict) else '',
+    )
+
+from . import basic_repository as _basic_repository
+from .basic_repository import (
+    create_announcement,
+    create_member_with_password,
+    delete_announcement,
+    delete_member,
+    get_announcement,
+    get_member,
+    list_announcements,
+    list_members,
+    update_announcement,
+    update_member,
+)
+
+from .attendance import (
+    create_attendance,
+    delete_attendance,
+    get_attendance,
+    list_attendance as list_activity_attendance,
+)
+
+from .activity_registration_risk import (
+    create_activity,
+    create_registration,
+    cancel_registration,
+    delete_activity,
+    get_activity,
+    get_registration_status,
+    list_activities,
+    list_registration_statuses,
+    registration_risk_smoke_panel,
+    update_activity,
+)
+
+Member = _basic_repository.MemberRecord
+
+
+def reset_database() -> None:
+    """Reset the SQLite database to an empty initialized state."""
+    if Path(DB_PATH).exists():
+        Path(DB_PATH).unlink()
+    init_db(DB_PATH)
+
+def create_member(*args: Any, **kwargs: Any) -> Any:
+    """Create a member using either legacy kwargs or a payload object.
+
+    Args:
+        args: Optional legacy connection plus payload object.
+        kwargs: Legacy member fields.
+
+    Returns:
+        Member id for legacy calls, otherwise a member record.
+    """
+    if kwargs:
+        connection = args[0] if args and hasattr(args[0], 'execute') else None
+        fields = {
+            'name': kwargs.get('name'),
+            'phone': kwargs.get('phone'),
+            'role': kwargs.get('role', 'member'),
+            'running_years': int(kwargs.get('running_years') or 0),
+            'pace': kwargs.get('pace'),
+            'usual_distance_km': kwargs.get('usual_distance_km'),
+            'training_goal': kwargs.get('training_goal'),
+            'password_hash': kwargs.get('password_hash', ''),
+        }
+        sql = '''
+            INSERT INTO members (name, phone, role, running_years, pace, usual_distance_km, training_goal, password_hash)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        '''
+        params = (
+            fields['name'],
+            fields['phone'],
+            fields['role'],
+            fields['running_years'],
+            fields['pace'],
+            fields['usual_distance_km'],
+            fields['training_goal'],
+            fields['password_hash'],
+        )
+        if connection is not None:
+            cursor = connection.execute(sql, params)
+            return int(cursor.lastrowid)
+        with connect() as new_connection:
+            cursor = new_connection.execute(sql, params)
+            return int(cursor.lastrowid)

@@ -1,0 +1,505 @@
+{
+  "summary": {
+    "total_tasks": 200,
+    "status_counts": {
+      "ready": 10,
+      "todo": 6,
+      "running": 36,
+      "done": 123,
+      "archived": 25
+    },
+    "top_themes": [
+      {
+        "tag": "看板调度",
+        "score": 340,
+        "examples": [
+          {
+            "task_id": "t_185f8e35",
+            "title": "设计跑团训练日历导出空状态与异常提示"
+          },
+          {
+            "task_id": "t_1efbfe67",
+            "title": "补充跑步数据导入异常预检的中文验收清单"
+          },
+          {
+            "task_id": "t_bca95c8f",
+            "title": "修复 tests/test_training_pace.py 缺失 backend.training_pace 导入导致全量 pytest 失败"
+          },
+          {
+            "task_id": "t_1c3412ee",
+            "title": "设计跑团报名候补与自动补位规则"
+          },
+          {
+            "task_id": "t_a7e1660d",
+            "title": "补充活动候补队列的中文验收清单"
+          }
+        ]
+      },
+      {
+        "tag": "跑步数据",
+        "score": 124,
+        "examples": [
+          {
+            "task_id": "t_185f8e35",
+            "title": "设计跑团训练日历导出空状态与异常提示"
+          },
+          {
+            "task_id": "t_1efbfe67",
+            "title": "补充跑步数据导入异常预检的中文验收清单"
+          },
+          {
+            "task_id": "t_bca95c8f",
+            "title": "修复 tests/test_training_pace.py 缺失 backend.training_pace 导入导致全量 pytest 失败"
+          },
+          {
+            "task_id": "t_1c3412ee",
+            "title": "设计跑团报名候补与自动补位规则"
+          },
+          {
+            "task_id": "t_a7e1660d",
+            "title": "补充活动候补队列的中文验收清单"
+          }
+        ]
+      },
+      {
+        "tag": "文档方案",
+        "score": 104,
+        "examples": [
+          {
+            "task_id": "t_185f8e35",
+            "title": "设计跑团训练日历导出空状态与异常提示"
+          },
+          {
+            "task_id": "t_1efbfe67",
+            "title": "补充跑步数据导入异常预检的中文验收清单"
+          },
+          {
+            "task_id": "t_bca95c8f",
+            "title": "修复 tests/test_training_pace.py 缺失 backend.training_pace 导入导致全量 pytest 失败"
+          },
+          {
+            "task_id": "t_1c3412ee",
+            "title": "设计跑团报名候补与自动补位规则"
+          },
+          {
+            "task_id": "t_a7e1660d",
+            "title": "补充活动候补队列的中文验收清单"
+          }
+        ]
+      },
+      {
+        "tag": "导入向导",
+        "score": 78,
+        "examples": [
+          {
+            "task_id": "t_1efbfe67",
+            "title": "补充跑步数据导入异常预检的中文验收清单"
+          },
+          {
+            "task_id": "t_bca95c8f",
+            "title": "修复 tests/test_training_pace.py 缺失 backend.training_pace 导入导致全量 pytest 失败"
+          },
+          {
+            "task_id": "t_f02ecf1d",
+            "title": "收紧活动与跑步导入模型额外字段白名单"
+          },
+          {
+            "task_id": "t_fbe72b49",
+            "title": "为跑步导入实现服务端授权同意与撤销记录"
+          },
+          {
+            "task_id": "t_806d163b",
+            "title": "补强跑步导入内容行列与敏感字段校验"
+          }
+        ]
+      },
+      {
+        "tag": "安全权限",
+        "score": 58,
+        "examples": [
+          {
+            "task_id": "t_f02ecf1d",
+            "title": "收紧活动与跑步导入模型额外字段白名单"
+          },
+          {
+            "task_id": "t_806d163b",
+            "title": "补强跑步导入内容行列与敏感字段校验"
+          },
+          {
+            "task_id": "t_1553c471",
+            "title": "修复跑步导入重复检测越权探测问题"
+          },
+          {
+            "task_id": "t_fba8b4c3",
+            "title": "修复密码无盐 SHA-256 存储问题"
+          },
+          {
+            "task_id": "t_e3bd80ea",
+            "title": "修复未签名认证 token 可伪造问题"
+          }
+        ]
+      },
+      {
+        "tag": "瀑布流",
+        "score": 23,
+        "examples": [
+          {
+            "task_id": "t_7a6e3edb",
+            "title": "设计跑团活动照片精选墙功能规格"
+          },
+          {
+            "task_id": "t_28b5e56f",
+            "title": "整理跑团功能创意种子库"
+          },
+          {
+            "task_id": "t_8b93c361",
+            "title": "建立活动复盘卡片验收门禁清单"
+          },
+          {
+            "task_id": "t_e2722fba",
+            "title": "补充校园挑战赛排行榜前端空状态方案"
+          },
+          {
+            "task_id": "t_a370f3fb",
+            "title": "设计训练完成后的智能复盘卡片"
+          }
+        ]
+      },
+      {
+        "tag": "校园风格",
+        "score": 20,
+        "examples": [
+          {
+            "task_id": "t_1c3412ee",
+            "title": "设计跑团报名候补与自动补位规则"
+          },
+          {
+            "task_id": "t_7a6e3edb",
+            "title": "设计跑团活动照片精选墙功能规格"
+          },
+          {
+            "task_id": "t_4aaef02a",
+            "title": "建立创意任务去重评分样例"
+          },
+          {
+            "task_id": "t_28b5e56f",
+            "title": "整理跑团功能创意种子库"
+          },
+          {
+            "task_id": "t_de4f7d60",
+            "title": "新增跑团活动运营周报预览卡片"
+          }
+        ]
+      }
+    ],
+    "top_keywords": [
+      {
+        "keyword": "worker",
+        "count": 142
+      },
+      {
+        "keyword": "token",
+        "count": 107
+      },
+      {
+        "keyword": "and",
+        "count": 105
+      },
+      {
+        "keyword": "backend",
+        "count": 95
+      },
+      {
+        "keyword": "任务",
+        "count": 85
+      },
+      {
+        "keyword": "验收",
+        "count": 85
+      },
+      {
+        "keyword": "py",
+        "count": 83
+      },
+      {
+        "keyword": "task",
+        "count": 61
+      },
+      {
+        "keyword": "the",
+        "count": 59
+      },
+      {
+        "keyword": "tests",
+        "count": 57
+      },
+      {
+        "keyword": "目标",
+        "count": 52
+      },
+      {
+        "keyword": "workspace",
+        "count": 51
+      },
+      {
+        "keyword": "导入",
+        "count": 50
+      },
+      {
+        "keyword": "lab",
+        "count": 49
+      },
+      {
+        "keyword": "routes",
+        "count": 49
+      },
+      {
+        "keyword": "swarm",
+        "count": 48
+      },
+      {
+        "keyword": "验收标准",
+        "count": 46
+      },
+      {
+        "keyword": "hermes",
+        "count": 45
+      },
+      {
+        "keyword": "tmp",
+        "count": 44
+      },
+      {
+        "keyword": "role",
+        "count": 44
+      }
+    ]
+  },
+  "dedupe_rules": [
+    "同一工作区且目标产物路径相同：高风险，跳过创建",
+    "未完成任务与候选任务核心词重叠达到 45% 且不少于 3 个：高风险，跳过或改为下游任务",
+    "同一负责人在同主题上已有 ready/running/blocked：中高风险，避免并行创建",
+    "候选任务命中跑步数据、校园风格、瀑布流、导入向导等趋势标签时，必须检查相同标签下最近任务示例",
+    "允许评审/补充/测试类下游任务，但标题和正文必须写明上游产物与新增价值"
+  ],
+  "next_round_guidance": [
+    "创建新创意前先读取 summary.top_themes 前 5 项，优先避开高频主题或改为明确下游评审/测试任务",
+    "候选标题若命中 duplicate_groups 中的指纹词，必须更换作用对象、交付物路径或直接跳过",
+    "正文必须写明具体产物路径、与相近任务的差异点，以及单个 worker 30 分钟内可完成的验收步骤"
+  ],
+  "local_run_example": {
+    "command": "python scripts/generate_creative_idea_tags.py --db \"$HERMES_KANBAN_DB\" --limit 200",
+    "json_output": "docs/中文创意库标签摘要.json",
+    "markdown_output": "docs/中文创意库标签摘要.md",
+    "usage": "下一轮创意侦察先查看 top_themes 和 duplicate_groups；若候选任务命中高频主题或疑似重复组，就换模块、换产物路径，或改成评审/补充/测试类下游任务。"
+  },
+  "duplicate_groups": [
+    {
+      "fingerprint": "任务|看板调度",
+      "items": [
+        {
+          "task_id": "t_b00d1f8d",
+          "title": "开发任务分流与状态面板",
+          "status": "done"
+        },
+        {
+          "task_id": "t_d18fb288",
+          "title": "开发任务分流与状态面板",
+          "status": "archived"
+        },
+        {
+          "task_id": "t_e35f5df3",
+          "title": "前端空闲任务推荐卡片",
+          "status": "done"
+        },
+        {
+          "task_id": "t_a8db88dc",
+          "title": "完善空闲任务推荐卡片的交互联动",
+          "status": "done"
+        },
+        {
+          "task_id": "t_2d53c02a",
+          "title": "实现空闲检测与任务分配面板",
+          "status": "done"
+        }
+      ],
+      "count": 5
+    },
+    {
+      "fingerprint": "1034|com|github|https|ljy220058",
+      "items": [
+        {
+          "task_id": "t_dfc72d15",
+          "title": "https://github.com/Ljy220058/1034- 推送代码并且长期分支管理",
+          "status": "done"
+        },
+        {
+          "task_id": "t_a7152a61",
+          "title": "https://github.com/Ljy220058/1034- 推送代码并且长期分支管理",
+          "status": "archived"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "fingerprint": "and|gaps|idea|identify|inspect|integration|lab|swarm|workspace",
+      "items": [
+        {
+          "task_id": "t_b8d4a60a",
+          "title": "Idea: inspect swarm lab workspace and identify integration gaps",
+          "status": "done"
+        },
+        {
+          "task_id": "t_c6db06a0",
+          "title": "Idea: inspect swarm lab workspace and identify integration gaps",
+          "status": "archived"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "fingerprint": "healthcheck|implement|sync|workspace",
+      "items": [
+        {
+          "task_id": "t_e63d3141",
+          "title": "implement workspace sync healthcheck",
+          "status": "done"
+        },
+        {
+          "task_id": "t_75afde46",
+          "title": "implement workspace sync healthcheck",
+          "status": "archived"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "fingerprint": "中文创意|任务|看板调度",
+      "items": [
+        {
+          "task_id": "t_05ada43d",
+          "title": "中文创意：前端空闲任务推荐卡片增强",
+          "status": "done"
+        },
+        {
+          "task_id": "t_a95b4b71",
+          "title": "中文创意：前端空闲任务推荐卡片增强",
+          "status": "archived"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "fingerprint": "中文功能创意",
+      "items": [
+        {
+          "task_id": "t_a263c26e",
+          "title": "中文功能创意：前端快捷操作抽屉",
+          "status": "done"
+        },
+        {
+          "task_id": "t_94675de5",
+          "title": "中文功能创意：后台事件聚合面板",
+          "status": "done"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "fingerprint": "导入",
+      "items": [
+        {
+          "task_id": "t_134f9f40",
+          "title": "怎么样才能接入高驰数据或者佳明数据或者导入",
+          "status": "done"
+        },
+        {
+          "task_id": "t_d7bf9a8a",
+          "title": "怎么样才能接入高驰数据或者佳明数据或者导入",
+          "status": "archived"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "fingerprint": "我们ui设计要有深圳技术大学的风格",
+      "items": [
+        {
+          "task_id": "t_77b37039",
+          "title": "我们ui设计要有深圳技术大学的风格",
+          "status": "done"
+        },
+        {
+          "task_id": "t_3d6c6316",
+          "title": "我们ui设计要有深圳技术大学的风格",
+          "status": "archived"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "fingerprint": "把代码推送github",
+      "items": [
+        {
+          "task_id": "t_a0fce226",
+          "title": "把代码推送github",
+          "status": "done"
+        },
+        {
+          "task_id": "t_989b0bf6",
+          "title": "把代码推送github",
+          "status": "archived"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "fingerprint": "瀑布流",
+      "items": [
+        {
+          "task_id": "t_4cf0473f",
+          "title": "把活动界面做成小红书的瀑布流式卡片",
+          "status": "done"
+        },
+        {
+          "task_id": "t_fea9e41e",
+          "title": "把活动界面做成小红书的瀑布流式卡片",
+          "status": "archived"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "fingerprint": "补充后端异常处理的单元测试覆盖率",
+      "items": [
+        {
+          "task_id": "t_3150739b",
+          "title": "补充后端异常处理的单元测试覆盖率",
+          "status": "done"
+        },
+        {
+          "task_id": "t_91af3afe",
+          "title": "补充后端异常处理的单元测试覆盖率",
+          "status": "archived"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "fingerprint": "跑步|跑量|跑量排行",
+      "items": [
+        {
+          "task_id": "t_cc6fe294",
+          "title": "可能可以做一个成员的跑步数据分析可视化 跑量排行",
+          "status": "done"
+        },
+        {
+          "task_id": "t_d8d5ea5c",
+          "title": "可能可以做一个成员的跑步数据分析可视化 跑量排行",
+          "status": "archived"
+        }
+      ],
+      "count": 2
+    }
+  ]
+}

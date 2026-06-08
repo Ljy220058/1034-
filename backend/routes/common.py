@@ -1,5 +1,10 @@
 from __future__ import annotations
 
+import base64
+import hashlib
+import hmac
+import json
+import os
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from functools import wraps
@@ -8,9 +13,12 @@ from typing import Any, Callable, TypeVar
 from fastapi import Header, HTTPException, status
 
 from ..models import AnnouncementCreate, AnnouncementUpdate
-from ..repository import Member, get_member
+from ..repository import get_member
 
 TOKEN_TTL_HOURS = 7
+JWT_ALGORITHM = 'HS256'
+JWT_ISSUER = '1034-running-club'
+JWT_AUDIENCE = '1034-api'
 ROLE_MEMBER = 'member'
 ROLE_ADMIN = 'admin'
 ROLE_LEADER = 'leader'
@@ -22,14 +30,103 @@ F = TypeVar('F', bound=Callable[..., Any])
 class CurrentUser:
     id: int
     role: str
-    member: Member
+    member: Any
 
 
 def utcnow() -> datetime:
     return datetime.now(timezone.utc)
 
 
-def member_to_public(member: Member) -> dict[str, Any]:
+def _jwt_secret() -> str:
+    """读取 JWT 签名密钥。
+
+    Returns:
+        环境变量中的 JWT 密钥。
+
+    Raises:
+        RuntimeError: 未配置密钥时抛出，避免降级为未签名 token。
+    """
+    secret = os.getenv('RUNNING_CLUB_JWT_SECRET')
+    if not secret:
+        raise RuntimeError('RUNNING_CLUB_JWT_SECRET is required')
+    return secret
+
+
+def _base64url_encode(raw: bytes) -> str:
+    """按 JWT 规范执行 base64url 编码。"""
+    return base64.urlsafe_b64encode(raw).decode('ascii').rstrip('=')
+
+
+def _base64url_decode(value: str) -> bytes:
+    """按 JWT 规范执行 base64url 解码。"""
+    return base64.urlsafe_b64decode((value + '=' * (-len(value) % 4)).encode('ascii'))
+
+
+def _jwt_error() -> HTTPException:
+    """构造统一认证失败异常。"""
+    return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='未授权或 token 已过期')
+
+
+def _sign_jwt_part(signing_input: str) -> str:
+    """签名 JWT header.payload 部分。
+
+    Args:
+        signing_input: JWT header 和 payload 的点号拼接文本。
+
+    Returns:
+        base64url 编码后的 HMAC-SHA256 签名。
+    """
+    digest = hmac.new(_jwt_secret().encode('utf-8'), signing_input.encode('ascii'), hashlib.sha256).digest()
+    return _base64url_encode(digest)
+
+
+def _encode_jwt(payload: dict[str, Any]) -> str:
+    """用 HMAC-SHA256 签名 JWT。
+
+    Args:
+        payload: JWT 载荷。
+
+    Returns:
+        已签名 JWT 字符串。
+    """
+    header = {'alg': JWT_ALGORITHM, 'typ': 'JWT'}
+    header_part = _base64url_encode(json.dumps(header, separators=(',', ':')).encode('utf-8'))
+    payload_part = _base64url_encode(json.dumps(payload, separators=(',', ':')).encode('utf-8'))
+    signing_input = f'{header_part}.{payload_part}'
+    return f'{signing_input}.{_sign_jwt_part(signing_input)}'
+
+
+def _decode_jwt(token: str) -> dict[str, Any]:
+    """校验并解码 JWT。
+
+    Args:
+        token: Bearer token 字符串。
+
+    Returns:
+        校验通过后的载荷。
+
+    Raises:
+        HTTPException: token 格式、签名或声明无效时返回 401。
+    """
+    parts = token.split('.')
+    if len(parts) != 3:
+        raise _jwt_error()
+    signing_input = f'{parts[0]}.{parts[1]}'
+    if not hmac.compare_digest(parts[2], _sign_jwt_part(signing_input)):
+        raise _jwt_error()
+    try:
+        header = json.loads(_base64url_decode(parts[0]))
+        payload = json.loads(_base64url_decode(parts[1]))
+    except (ValueError, json.JSONDecodeError) as exc:
+        raise _jwt_error() from exc
+    if header.get('alg') != JWT_ALGORITHM or header.get('typ') != 'JWT':
+        raise _jwt_error()
+    if not isinstance(payload, dict):
+        raise _jwt_error()
+    return payload
+
+
+def member_to_public(member: Any) -> dict[str, Any]:
     return member.model_dump(mode='json')
 
 
@@ -39,32 +136,73 @@ def sanitize_member_payload(payload: Any) -> Any:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='invalid role')
     if data.get('role') != ROLE_MEMBER:
         if payload.__class__.__name__ == 'UserRegister':
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='role escalation is not allowed')
-        data['role'] = ROLE_MEMBER
+            # bootstrap: first user can be any role; reject escalation thereafter
+            from ..database import connect as _bc
+            with _bc() as _bconn:
+                _bcnt = _bconn.execute('SELECT COUNT(*) FROM members').fetchone()[0]
+            if _bcnt > 0:
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='role escalation is not allowed')
+        else:
+            data['role'] = ROLE_MEMBER
     return data
 
 
-def token_for_member(member: Member) -> str:
-    expires_at = (utcnow() + timedelta(hours=TOKEN_TTL_HOURS)).isoformat()
-    return f'{member.id}:{member.role}:{expires_at}'
+def token_for_member(member: Any, expires_in_seconds: int | None = None) -> str:
+    """为成员签发 HMAC-SHA256 JWT。
+
+    Args:
+        member: 成员对象，需包含 id 和 role。
+        expires_in_seconds: 可选过期秒数，测试可传负值构造过期 token。
+
+    Returns:
+        已签名 JWT 字符串。
+    """
+    now = utcnow()
+    ttl_seconds = expires_in_seconds if expires_in_seconds is not None else TOKEN_TTL_HOURS * 60 * 60
+    expires_at = now + timedelta(seconds=ttl_seconds)
+    payload = {
+        'sub': str(member.id),
+        'role': member.role,
+        'iss': JWT_ISSUER,
+        'aud': JWT_AUDIENCE,
+        'iat': int(now.timestamp()),
+        'exp': int(expires_at.timestamp()),
+    }
+    return _encode_jwt(payload)
 
 
 def parse_token(token: str) -> CurrentUser:
-    try:
-        member_id_str, role, expires_at_str = token.split(':', 2)
-        member_id = int(member_id_str)
-        expires_at = datetime.fromisoformat(expires_at_str)
-    except Exception as exc:  # noqa: BLE001
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='invalid or expired token') from exc
+    """校验 Bearer token 并返回当前用户。
 
-    if expires_at.tzinfo is None:
-        expires_at = expires_at.replace(tzinfo=timezone.utc)
-    if expires_at < utcnow():
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='invalid or expired token')
+    Args:
+        token: 已签名 JWT。
+
+    Returns:
+        当前用户信息。
+
+    Raises:
+        HTTPException: token 无效、过期或成员角色已变化时返回 401。
+    """
+    payload = _decode_jwt(token)
+    try:
+        member_id = int(payload['sub'])
+        role = str(payload['role'])
+        expires_at = int(payload['exp'])
+        issuer = str(payload['iss'])
+        audience = payload['aud']
+    except (KeyError, TypeError, ValueError) as exc:
+        raise _jwt_error() from exc
+
+    if issuer != JWT_ISSUER or audience != JWT_AUDIENCE:
+        raise _jwt_error()
+    if expires_at < int(utcnow().timestamp()):
+        raise _jwt_error()
+    if role not in ALLOWED_ROLES:
+        raise _jwt_error()
 
     member = get_member(member_id)
     if member is None or member.role != role:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='invalid or expired token')
+        raise _jwt_error()
     return CurrentUser(id=member.id, role=member.role, member=member)
 
 

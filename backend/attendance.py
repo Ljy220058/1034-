@@ -72,9 +72,11 @@ def create_attendance(activity_id: int, member_id: int, *, gps_checked: bool = F
             (activity_id, member_id),
         ).fetchone()
         if existing is not None:
+            # 保留原有签到时间（若无新时间传入）
+            keep_at = existing['signed_in_at'] if checked_in_at is None else signed_in_at
             connection.execute(
                 'UPDATE attendances SET status = ?, signed_in_at = ?, gps_checked = ? WHERE id = ?',
-                ('signed_in', signed_in_at.isoformat(), int(gps_checked), existing['id']),
+                ('signed_in', keep_at if isinstance(keep_at, str) else keep_at.isoformat(), int(gps_checked), existing['id']),
             )
             row = connection.execute('SELECT * FROM attendances WHERE id = ?', (existing['id'],)).fetchone()
             return _row_to_attendance(row), 'updated'

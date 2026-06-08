@@ -1,0 +1,102 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/schemas/training_reminder_preference.schema.json",
+  "title": "训练提醒偏好数据契约",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "契约版本",
+    "成员ID",
+    "提醒类型",
+    "提醒渠道",
+    "提前时间分钟",
+    "免打扰时段",
+    "训练日例外",
+    "是否启用",
+    "更新时间"
+  ],
+  "properties": {
+    "契约版本": {
+      "type": "string",
+      "const": "训练提醒偏好.v1"
+    },
+    "成员ID": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "提醒类型": {
+      "type": "string",
+      "enum": ["训练计划", "活动报名", "异常复盘"]
+    },
+    "提醒渠道": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": ["应用内", "短信", "邮件", "微信"]
+      },
+      "contains": {
+        "const": "应用内"
+      }
+    },
+    "提前时间分钟": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 10080
+    },
+    "免打扰时段": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["启用", "开始时间", "结束时间", "时区"],
+      "properties": {
+        "启用": {
+          "type": "boolean"
+        },
+        "开始时间": {
+          "type": ["string", "null"],
+          "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+        },
+        "结束时间": {
+          "type": ["string", "null"],
+          "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+        },
+        "时区": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "default": "Asia/Shanghai"
+        }
+      }
+    },
+    "训练日例外": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["日期", "处理方式", "原因"],
+        "properties": {
+          "日期": {
+            "type": "string",
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+          },
+          "处理方式": {
+            "type": "string",
+            "enum": ["暂停提醒", "仅应用内", "提前一天"]
+          },
+          "原因": {
+            "type": ["string", "null"],
+            "maxLength": 200
+          }
+        }
+      }
+    },
+    "是否启用": {
+      "type": "boolean"
+    },
+    "更新时间": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}
