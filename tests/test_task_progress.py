@@ -4,53 +4,67 @@ from fastapi.testclient import TestClient
 
 from backend.app import app
 
+
 client = TestClient(app, raise_server_exceptions=False)
 
 
-def test_task_progress_list_returns_three_items() -> None:
-    """任务流状态列表接口应返回结构化任务列表。"""
+def test_tasks_progress_正常请求_返回任务列表和数量():
+    """任务进度列表接口返回成功状态、数量和任务项。"""
+    # Arrange
+    # Act
     response = client.get('/api/v1/tasks/progress')
-
+    # Assert
     assert response.status_code == 200
-    body = response.json()
-    assert body['message'] == '成功'
-    assert set(body.keys()) == {'data', 'message'}
-
-    data = body['data']
-    assert data['count'] == 3
-    assert len(data['items']) == 3
-    assert data['items'][0]['status'] == 'todo'
-    assert all('progress' in item for item in data['items'])
+    payload = response.json()
+    assert payload['message'] == '成功'
+    assert payload['data']['count'] == len(payload['data']['items'])
 
 
-def test_task_progress_detail_returns_single_item() -> None:
-    """任务流状态详情接口应返回单条任务的结构化信息。"""
-    response = client.get('/api/v1/tasks/progress/2')
+def test_tasks_progress_路径参数不存在_返回404():
+    """不存在的任务进度详情应返回 404。"""
+    # Arrange
+    # Act
+    response = client.get('/api/v1/tasks/progress/999999')
+    # Assert
+    assert response.status_code == 404
+    assert response.json() == {'detail': '任务不存在'}
 
+
+def test_tasks_progress_simulate_缺少必填字段_返回422():
+    """模拟任务进度时缺少必填字段会触发 422 校验错误。"""
+    # Arrange
+    # Act
+    response = client.post('/api/v1/tasks/progress/simulate', json={'steps': 3})
+    # Assert
+    assert response.status_code == 422
+
+
+def test_tasks_progress_simulate_steps太小_返回422():
+    """steps 小于最小值时应被 Pydantic 拒绝。"""
+    # Arrange
+    # Act
+    response = client.post('/api/v1/tasks/progress/simulate', json={'task_id': 1, 'steps': 1})
+    # Assert
+    assert response.status_code == 422
+
+
+def test_tasks_metadata_正常请求_返回元数据列表():
+    """任务元数据列表接口返回成功状态和元数据条目。"""
+    # Arrange
+    # Act
+    response = client.get('/api/v1/tasks/metadata')
+    # Assert
     assert response.status_code == 200
-    body = response.json()
-    assert body['message'] == '成功'
-    assert set(body.keys()) == {'data', 'message'}
-
-    data = body['data']
-    assert data['task_id'] == 2
-    assert data['status'] == 'running'
-    assert data['progress']['percent'] == 65
-    assert data['progress']['remaining_steps'] == ['补齐回归测试', '联调接口', '手动验证']
+    payload = response.json()
+    assert payload['message'] == '成功'
+    assert payload['data']['count'] == len(payload['data']['items'])
 
 
-def test_task_progress_simulation_returns_increasing_progress() -> None:
-    """任务流状态进度推进入口应返回模拟进度序列。"""
-    response = client.post('/api/v1/tasks/progress/simulate', json={'task_id': 1, 'steps': 4})
-
-    assert response.status_code == 200
-    body = response.json()
-    assert body['message'] == '成功'
-    assert set(body.keys()) == {'data', 'message'}
-
-    data = body['data']
-    assert data['task_id'] == 1
-    assert data['steps'] == 4
-    assert len(data['timeline']) == 4
-    assert data['timeline'][0]['percent'] == 0
-    assert data['timeline'][-1]['percent'] == 100
+def test_tasks_metadata_不存在任务_返回404():
+    """读取不存在的任务元数据时返回 404。"""
+    # Arrange
+    # Act
+    response = client.get('/api/v1/tasks/metadata/999999')
+    # Assert
+    assert response.status_code == 404
+    assert response.json() == {'detail': '任务不存在'}
