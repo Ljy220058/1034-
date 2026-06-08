@@ -20,5 +20,6 @@ def test_活动分享卡片接口_非法_member_id_返回结构化422错误() ->
 
     assert response.status_code == 422
     payload = response.json()
-    assert payload == {'detail': '输入验证失败'} or isinstance(payload.get('detail'), str)
+    assert isinstance(payload, dict)
     assert 'detail' in payload
+    assert isinstance(payload['detail'], str)

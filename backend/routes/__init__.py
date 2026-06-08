@@ -4,8 +4,9 @@ from fastapi import FastAPI
 
 from .activities import router as activities_router
 from .activity_digest import router as activity_digest_router
-from .achievements import router as achievements_router
+from .activity_photos import router as activity_photos_router
 from .activity_share_card import router as activity_share_card_router
+from .achievements import router as achievements_router
 from .announcements import router as announcements_router
 from .checkin_stats import router as checkin_stats_router
 from .checkins import router as checkins_router
