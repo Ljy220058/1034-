@@ -25,8 +25,9 @@ def test_register_routes_includes_existing_modules_only(tmp_path: Path) -> None:
     register_routes(app)
     paths = {route.path for route in app.routes}
 
-    assert '/api/v1/login_verification/login' in paths
-    assert '/api/v1/login_verification/register' in paths
+    assert '/api/v1/activities' in paths
+    assert '/api/v1/activity_digest' in paths
+    assert '/api/v1/activities/{activity_id}/digest' in paths
     assert '/api/v1/training_plan_completion' in paths
     assert '/api/v1/activity_digest' in paths
     assert '/api/v1/attendance' not in paths
