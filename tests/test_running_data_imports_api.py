@@ -19,14 +19,11 @@ def _register_member(client: TestClient, *, phone: str, role: str = 'member') ->
         json={'name': 'Privacy Runner', 'phone': phone, 'password': 'secret123', 'role': role},
     )
     assert response.status_code == 201
-    payload = response.json()['data']
-    return payload['member']
-
+    return response.json()['data']
 
 
 def _auth_header(token: str) -> dict[str, str]:
     return {'Authorization': f'Bearer {token}'}
-
 
 
 def test_running_data_import_precheck_正常输入_返回授权说明(tmp_path: Path) -> None:
@@ -40,7 +37,6 @@ def test_running_data_import_precheck_正常输入_返回授权说明(tmp_path: 
     assert response.json()['data']['source'] == {'id': 'garmin', 'name': '佳明'}
 
 
-
 def test_running_data_import_precheck_缺少source_返回422(tmp_path: Path) -> None:
     """预检接口缺少必填 source 时返回 422。"""
     client = _client(tmp_path)
@@ -52,7 +48,6 @@ def test_running_data_import_precheck_缺少source_返回422(tmp_path: Path) -> 
     assert 'source' in str(response.json()['detail'])
 
 
-
 def test_running_data_import_precheck_未认证_返回401(tmp_path: Path) -> None:
     """预检接口未携带 token 时返回 401。"""
     client = _client(tmp_path)
@@ -60,7 +55,6 @@ def test_running_data_import_precheck_未认证_返回401(tmp_path: Path) -> Non
     response = client.get('/api/v1/running-data-imports/precheck', params={'source': 'garmin'})
 
     assert response.status_code == 401
-
 
 
 def test_running_data_import_start_未授权_返回403(tmp_path: Path) -> None:
@@ -72,7 +66,6 @@ def test_running_data_import_start_未授权_返回403(tmp_path: Path) -> None:
 
     assert response.status_code == 403
     assert response.json()['detail'] == '跑步数据导入需要先确认授权范围'
-
 
 
 def test_running_data_import_start_预检不匹配_返回403(tmp_path: Path) -> None:
@@ -88,7 +81,6 @@ def test_running_data_import_start_预检不匹配_返回403(tmp_path: Path) -> 
 
     assert response.status_code == 403
     assert response.json()['detail'] == '跑步数据导入需要匹配的预检确认记录'
-
 
 
 def test_running_data_import_start_授权后返回202(tmp_path: Path) -> None:
@@ -108,7 +100,6 @@ def test_running_data_import_start_授权后返回202(tmp_path: Path) -> None:
     assert response.json()['data']['import_started'] is False
 
 
-
 def test_running_data_import_consent_缺少读取字段_返回422(tmp_path: Path) -> None:
     """授权接口 read_fields 为空时返回 422。"""
     client = _client(tmp_path)
@@ -120,7 +111,6 @@ def test_running_data_import_consent_缺少读取字段_返回422(tmp_path: Path
     assert 'read_fields cannot be empty' in str(response.json()['detail'])
 
 
-
 def test_running_data_import_consent_未认证_返回401(tmp_path: Path) -> None:
     """授权接口未登录时返回 401。"""
     client = _client(tmp_path)
@@ -128,7 +118,6 @@ def test_running_data_import_consent_未认证_返回401(tmp_path: Path) -> None
     response = client.post('/api/v1/running-data-imports/consent', json={'source': 'garmin', 'read_fields': ['gps_track_summary'], 'consent_version': 'v1'})
 
     assert response.status_code == 401
-
 
 
 def test_running_data_import_consent_敏感字段_返回422(tmp_path: Path) -> None:
@@ -140,7 +129,6 @@ def test_running_data_import_consent_敏感字段_返回422(tmp_path: Path) -> N
 
     assert response.status_code == 422
     assert 'access_token' in response.json()['detail']
-
 
 
 def test_running_data_import_consent_撤销后再次开始返回403(tmp_path: Path) -> None:
