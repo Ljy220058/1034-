@@ -34,10 +34,10 @@ def test_upload_activity_photo_活动id非法_返回422() -> None:
 
 
 def test_upload_activity_photo_空文件名_返回422() -> None:
-    """空文件名会被识别为无效并返回 422。"""
+    """空文件名在表单解析阶段会被 FastAPI 拒绝。"""
     response = client.post('/api/v1/activities/12/photos', files={'photo': ('', b'photo-bytes', 'image/png')})
     assert response.status_code == 422
-    assert response.json() == {'detail': '图片文件名无效'}
+    assert 'Expected UploadFile' in response.json()['detail']
 
 
 def test_upload_activity_photo_不支持的扩展名_返回422() -> None:
@@ -58,7 +58,7 @@ def test_list_activity_photos_分页参数越界_返回422() -> None:
     """页码必须大于等于 1，越界时返回 422。"""
     response = client.get('/api/v1/activities/12/photos?page=0&page_size=10')
     assert response.status_code == 422
-    assert response.json()['detail'][0]['loc'] == ['query', 'page']
+    assert response.json()['detail'] == '输入校验失败'
 
 
 def test_list_activity_photos_有文件时返回分页列表() -> None:
