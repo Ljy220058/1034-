@@ -1,5 +1,10 @@
 const helperText = '页面支持加载、空态、错误态与重试。';
 
+/**
+ * 生成任务卡片的 HTML 片段。
+ * @description 返回包含概览、交互和状态三类卡片的静态模板字符串。
+ * @returns {string} 任务卡片 HTML。
+ */
 function renderTaskCards() {
   return [
     {

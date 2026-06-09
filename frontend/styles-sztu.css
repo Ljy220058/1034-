@@ -45,10 +45,26 @@
 .member-badge-empty { min-height: 16rem; }
 .member-dashboard .panel-state { margin-top: 0; }
 
+/* ==================== 使用说明面板 ==================== */
+.usage-guide { display: grid; gap: var(--space-3); padding: var(--space-4); border: 1px solid var(--line); border-radius: var(--radius); background: linear-gradient(180deg, var(--card-bg), var(--card-bg-soft)); box-shadow: var(--shadow-soft); }
+.usage-guide__header { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); border: 0; background: transparent; color: inherit; text-align: left; cursor: pointer; padding: 0; }
+.usage-guide__header:focus-visible { outline: 2px solid var(--brand); outline-offset: var(--space-2); border-radius: var(--radius); }
+.usage-guide__header h2 { margin: var(--space-1) 0; font-size: var(--font-xl); }
+.usage-guide__status { margin: 0; color: var(--muted); }
+.usage-guide__chevron { font-size: 1.5rem; color: var(--muted); transition: transform var(--transition); }
+.usage-guide.is-expanded .usage-guide__chevron { transform: rotate(180deg); }
+.usage-guide__body { overflow: hidden; }
+.usage-guide__grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-3); }
+.usage-guide__item { min-width: 0; padding: var(--space-4); border-radius: var(--radius); border: 1px solid var(--line); background: var(--surface-2); display: grid; gap: var(--space-2); }
+.usage-guide__item h3 { margin: 0; font-size: var(--font-base); }
+.usage-guide__item p { margin: 0; color: var(--muted); line-height: 1.7; }
+.usage-guide.is-collapsed { padding-bottom: var(--space-3); }
+
 @media (max-width: 1024px) {
   .member-dashboard__metrics,
   .member-dashboard__layout { grid-template-columns: 1fr 1fr; }
-  .member-dashboard-chart__bars { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .member-dashboard-chart__bars,
+  .usage-guide__grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
 @media (max-width: 768px) {
@@ -57,11 +73,14 @@
   .member-toolbar__actions .btn { width: 100%; }
   .member-dashboard__metrics,
   .member-dashboard__layout,
-  .member-dashboard-chart__bars { grid-template-columns: 1fr; }
+  .member-dashboard-chart__bars,
+  .usage-guide__grid { grid-template-columns: 1fr; }
   .member-dashboard-chart__bars { min-height: auto; }
   .member-dashboard-bar__track { min-height: 9rem; }
   .member-dashboard-chart,
-  .member-dashboard__badge-wall { padding: var(--space-4); }
+  .member-dashboard__badge-wall,
+  .usage-guide { padding: var(--space-4); }
+  .usage-guide__header { align-items: flex-start; gap: var(--space-3); }
 }
 
 @media (max-width: 560px) {

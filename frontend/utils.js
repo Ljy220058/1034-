@@ -1,3 +1,8 @@
+/**
+ * Escape HTML special characters for safe text rendering.
+ * @param {string} value - Raw text that may contain HTML-sensitive characters.
+ * @returns {string} Escaped HTML-safe string.
+ */
 function escapeHtml(value) {
   return String(value)
     .replaceAll('&', '&amp;')
@@ -7,6 +12,12 @@ function escapeHtml(value) {
     .replaceAll("'", '&#39;');
 }
 
+/**
+ * Validate the task creation form fields.
+ * @param {HTMLFormElement|Object} form - Form-like object containing title, assignee, status, priority, and dependencies fields.
+ * @returns {Array<{field: string, message: string}>} Validation errors for missing or malformed inputs.
+ * @description Ensures required task fields are present and dependency IDs follow the expected Hermes task format.
+ */
 function validateTaskForm(form) {
   const errors = [];
   const title = String(form?.title?.value || '').trim();
@@ -34,6 +45,12 @@ function validateTaskForm(form) {
   return errors;
 }
 
+/**
+ * Normalize a worker availability payload for UI rendering.
+ * @param {Object} view - Raw worker availability data.
+ * @returns {{status: string, label: string, tone: string, message: string, canAssign: boolean}} Normalized availability view model.
+ * @description Converts backend-style availability payloads into a stable object for badges and buttons.
+ */
 function normalizeWorkerAvailability(view) {
   const status = String(view?.status || '').toLowerCase();
   return {

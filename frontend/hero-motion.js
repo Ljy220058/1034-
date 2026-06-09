@@ -1,7 +1,12 @@
 (()=>{
   "use strict";
 
-  function initHeroMotion() {
+  /**
+ * 初始化首屏英雄区动效与交互状态。
+ * @description 绑定按钮、可视区域观察器和计数器，驱动首屏卡片的轻量微交互。
+ * @returns {void}
+ */
+function initHeroMotion() {
     const root = document.querySelector('[data-hero-motion]');
     if (!root) return;
 

@@ -111,6 +111,12 @@ class TaskBoardDispatchRequest(BaseModel):
     limit: int = Field(default=20, ge=1, le=200)
 
 
+def _normalize_workspace_path(workspace_path: str) -> str:
+    """Normalize a workspace path for repository lookups."""
+    normalized = str(workspace_path).strip()
+    return normalized or DEFAULT_WORKSPACE_PATH
+
+
 class TaskBoardIntakeCard(BaseModel):
     """Task board intake card payload."""
 
@@ -119,16 +125,20 @@ class TaskBoardIntakeCard(BaseModel):
     default_fields: dict[str, str]
 
 
-def _normalize_workspace_path(workspace_path: str | Path) -> str:
-    """Normalize a workspace path.
-
-    Args:
-        workspace_path: Workspace path from API or caller.
-
-    Returns:
-        Absolute normalized workspace path.
-    """
-    return str(Path(workspace_path).expanduser().resolve())
+def _as_dict(value: Any) -> dict[str, Any]:
+    """Convert a repository result to a plain dict when possible."""
+    if isinstance(value, dict):
+        return dict(value)
+    model_dump = getattr(value, 'model_dump', None)
+    if callable(model_dump):
+        dumped = model_dump(mode='json')
+        return dict(dumped) if isinstance(dumped, dict) else {'value': dumped}
+    if hasattr(value, '__dict__'):
+        return dict(value.__dict__)
+    try:
+        return dict(value)
+    except Exception:
+        return {'value': value}
 
 
 def _task_type_from_text(title: str, description: str) -> tuple[str, list[str]]:
@@ -280,13 +290,18 @@ def read_task_board_intake() -> ApiResponse:
 def route_task_board(payload: TaskBoardDispatchRequest) -> ApiResponse:
     """Generate lightweight routing hints for new board tasks."""
     normalized_workspace = _normalize_workspace_path(payload.workspace_path)
-    board = build_worker_board(normalized_workspace).model_dump(mode='json')
-    active_workers = [worker for worker in board.get('idle_workers', []) + board.get('busy_workers', []) if isinstance(worker, dict) and str(worker.get('status')) == 'active']
+    board = _as_dict(build_worker_board(normalized_workspace))
+    raw_workers = []
+    for key in ('idle_workers', 'busy_workers', 'workers', 'active_workers'):
+        value = board.get(key, [])
+        if isinstance(value, list):
+            raw_workers.extend(value)
+    active_workers = [worker for worker in raw_workers if isinstance(worker, dict) and str(worker.get('status')) == 'active']
     if not active_workers:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='暂无可分配的 active worker')
 
     tasks = repository_list_workspace_task_items(normalized_workspace, limit=payload.limit)
-    task_dicts = [task.model_dump(mode='json') for task in tasks]
+    task_dicts = [_as_dict(task) for task in tasks]
     task_type, task_reasons = _task_type_from_text(payload.title, payload.description)
     load_map = _running_load_by_worker(task_dicts)
     candidates = _rank_workers(
@@ -321,7 +336,7 @@ def read_task_board_sidebar(
 ) -> ApiResponse:
     """返回任务可视化侧栏。"""
     normalized_workspace = _normalize_workspace_path(workspace_path)
-    recent_tasks = [task.model_dump(mode='json') for task in repository_list_workspace_task_items(normalized_workspace, limit=limit)]
+    recent_tasks = [_as_dict(task) for task in repository_list_workspace_task_items(normalized_workspace, limit=limit)]
     allowed_statuses = {'todo', 'ready', 'running', 'blocked', 'done', 'archived'}
     normalized_status = str(status_filter).strip().lower() if status_filter else ''
     if normalized_status and normalized_status not in allowed_statuses:

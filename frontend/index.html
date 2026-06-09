@@ -40,6 +40,21 @@
         </div>
       </div>
 
+      <div class="usage-guide card" data-usage-guide tabindex="0" aria-label="页面使用说明面板，默认收起">
+        <button class="usage-guide__header" type="button" data-usage-guide-toggle aria-expanded="false">
+          <div>
+            <p class="badge badge--blue">使用说明</p>
+            <h2>页面功能简介与快捷提示</h2>
+            <p class="usage-guide__status" data-usage-guide-status>默认收起，点击标题查看提示。</p>
+          </div>
+          <span class="usage-guide__chevron" aria-hidden="true">⌄</span>
+        </button>
+        <div class="usage-guide__body" data-usage-guide-body hidden>
+          <div class="usage-guide__grid" data-usage-guide-content>
+          </div>
+        </div>
+      </div>
+
       <div class="bento-grid bento-grid--4">
         <article class="stat-card">
           <div class="stat-card__label">在线成员</div>
@@ -255,5 +270,6 @@
 
   <script src="api.js"></script>
   <script src="member-dashboard.js"></script>
+  <script src="usage-guide.js"></script>
 </body>
 </html>

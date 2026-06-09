@@ -4,6 +4,10 @@ window.apiClient = (() => {
   const API_BASE = "/api/v1";
   const ACCESS_KEY_NAMES = ["access_credential", "accessCredential", "credential", "login_verificationCredential", "workerAccessCredential"];
 
+  /**
+   * Read the stored access credential from localStorage.
+   * @returns {string} Trimmed credential string, or an empty string when unavailable.
+   */
   function readAccessCredential() {
     if (typeof localStorage === "undefined") return "";
     for (const key of ACCESS_KEY_NAMES) {
@@ -15,6 +19,14 @@ window.apiClient = (() => {
     return "";
   }
 
+  /**
+   * Create the JSON headers used by frontend API requests.
+   * @param {Object} [options={}] - Header toggles for the request.
+   * @param {boolean} [options.login_verification=false] - Whether to attach the stored access credential.
+   * @param {boolean} [options.hasBody=false] - Whether the request sends a JSON body.
+   * @returns {Record<string, string>} Request headers for fetch calls.
+   * @description Builds a minimal JSON request header set and conditionally adds the access key.
+   */
   function createJsonHeaders({ login_verification = false, hasBody = false } = {}) {
     const headers = { Accept: "application/json" };
     if (hasBody) {
@@ -29,6 +41,12 @@ window.apiClient = (() => {
     return headers;
   }
 
+  /**
+   * Parse a fetch response body into JSON when possible.
+   * @param {Response} response - The raw fetch response object.
+   * @returns {Promise<object|null>} Parsed JSON payload, fallback detail object, or null for empty responses.
+   * @description Reads the body once and gracefully degrades to a detail wrapper when JSON parsing fails.
+   */
   async function parseJsonResponse(response) {
     const text = await response.text();
     if (!text) return null;
