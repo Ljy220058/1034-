@@ -20,7 +20,7 @@ window.usageGuideModule = (() => {
   ];
 
   const state = {
-    expanded: readInitialState(),
+    expanded: false,
   };
 
   let refs = {};
@@ -74,7 +74,7 @@ window.usageGuideModule = (() => {
   function handleKeydown(event) {
     if (event.key === 'Enter' || event.key === ' ') {
       const target = event.target;
-      if (target === refs.host || target === refs.toggle) {
+      if (target === refs.host) {
         event.preventDefault();
         toggleGuide();
       }
